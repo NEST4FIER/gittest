@@ -155,6 +155,8 @@ a { color: var(--link); }
 /* ===== Contact & footer ===== */
 .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; }
 .contact-grid p { margin-bottom: 1rem; }
+.footer .credit { font-size: 0.8rem; margin-top: 6px; }
+.footer a { color: #9a9aa0; }
 .footer { background: #000000; color: #9a9aa0; text-align: center; padding: 24px 0; font-size: 0.9rem; }
 
 /* ===== Music button ===== */
