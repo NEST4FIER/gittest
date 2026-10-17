@@ -102,7 +102,10 @@ musicButton.addEventListener("click", async () => {
   }
 });
 
-const calmMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// Visitors can ask their phone or computer for less motion; check it live so changes apply right away
+const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+const calmMotion = () => motionQuery.matches;
+let frostRunning = false;
 
 // Welcome banner: slow, drifting ice particles that glow and twinkle
 const frost = document.getElementById("frost");
@@ -137,7 +140,7 @@ function drawFrost(time) {
     ctx.shadowColor = "rgba(111, 179, 255, 0.9)";
     ctx.shadowBlur = f.r * 6;
     ctx.fill();
-    if (!calmMotion) {
+    if (!calmMotion()) {
       f.y -= f.speed;
       f.x += f.drift + Math.sin(time / 3000 + f.phase) * 0.15;
       if (f.y < -5) { f.y = h + 5; f.x = Math.random() * w; }
@@ -145,19 +148,23 @@ function drawFrost(time) {
       if (f.x > w + 5) f.x = -5;
     }
   });
-  if (!calmMotion) requestAnimationFrame(drawFrost);
+  frostRunning = !calmMotion();
+  if (frostRunning) requestAnimationFrame(drawFrost);
 }
 
 sizeFrost();
 requestAnimationFrame(drawFrost);
 window.addEventListener("resize", () => {
   sizeFrost();
-  if (calmMotion) requestAnimationFrame(drawFrost);
+  if (!frostRunning) requestAnimationFrame(drawFrost);
+});
+motionQuery.addEventListener("change", () => {
+  if (!frostRunning) requestAnimationFrame(drawFrost);
 });
 
 // Salon name "decodes" from random characters when the page loads
 document.querySelectorAll("[data-scramble]").forEach((el) => {
-  if (calmMotion) return;
+  if (calmMotion()) return;
   const finalText = el.textContent;
   const glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#*/<>[]";
   el.setAttribute("aria-label", finalText);
@@ -178,48 +185,73 @@ document.querySelectorAll("[data-scramble]").forEach((el) => {
   }, 45);
 });
 
-// Services list: when the mouse passes over a service, its name and price melt into
-// snow and re-form (like the links on igloo.inc), an icy glow follows the mouse,
-// and little snowflakes drift off the cursor. Clicking a service picks it in the booking form.
-const SNOW = "*·•°+×.:";
+// Services list: when the mouse passes over a service, its letters slowly melt like
+// snow (blur, drift and fade) and softly re-form in a wave across the word, an icy glow
+// follows the mouse, and snowflakes drift down from the cursor.
+// Clicking a service picks it in the booking form.
+const SNOW = "·•°*";
+const MELT_MS = 1600;     // how long each letter takes to melt and re-form
+const LETTER_GAP_MS = 60; // pause between letters, so the melt rolls across the word
+const serviceList = document.querySelector(".service-list");
 
-function snowScramble(el) {
-  if (!el.dataset.text) el.dataset.text = el.textContent;
-  const chars = [...el.dataset.text];
-  // Each letter turns to snow in a wave from left to right, then settles back
-  const melt = chars.map((_, i) => i * 0.6);
-  const settle = melt.map((m) => m + 6 + Math.random() * 6);
-  const lastFrame = Math.max(...settle);
-  let frame = 0;
-  clearInterval(el.snowTimer);
-  el.snowTimer = setInterval(() => {
-    el.textContent = chars
-      .map((ch, i) => {
-        if (ch === " " || frame < melt[i] || frame >= settle[i]) return ch;
-        return SNOW[Math.floor(Math.random() * SNOW.length)];
-      })
-      .join("");
-    frame++;
-    if (frame > lastFrame) {
-      clearInterval(el.snowTimer);
-      el.textContent = el.dataset.text;
+// Split each name and price into letters (grouped by word so lines still wrap between words)
+document.querySelectorAll("[data-snow]").forEach((el) => {
+  const words = el.textContent.split(" ");
+  let index = 0;
+  el.textContent = "";
+  words.forEach((word, w) => {
+    if (w > 0) {
+      el.append(" ");
+      index++;
     }
-  }, 35);
+    const wordBox = document.createElement("span");
+    wordBox.className = "snow-word";
+    [...word].forEach((ch) => {
+      const letter = document.createElement("span");
+      letter.className = "snow-letter";
+      letter.textContent = ch;
+      letter.dataset.ch = ch;
+      letter.style.setProperty("--i", index++);
+      wordBox.append(letter);
+    });
+    el.append(wordBox);
+  });
+});
+
+function meltText(el) {
+  if (el.classList.contains("melting")) return; // let a melt finish smoothly before starting again
+  const letters = el.querySelectorAll(".snow-letter");
+  el.classList.add("melting");
+  letters.forEach((letter) => {
+    const start = Number(letter.style.getPropertyValue("--i")) * LETTER_GAP_MS;
+    // While the letter is blurred and faint, it briefly becomes a snowflake
+    setTimeout(() => {
+      letter.textContent = SNOW[Math.floor(Math.random() * SNOW.length)];
+    }, start + MELT_MS * 0.32);
+    setTimeout(() => {
+      letter.textContent = letter.dataset.ch;
+    }, start + MELT_MS * 0.7);
+  });
+  const total = (letters.length - 1) * LETTER_GAP_MS + MELT_MS;
+  setTimeout(() => el.classList.remove("melting"), total + 50);
 }
 
-function dropSnowflake(row, x, y) {
+function dropSnowflake(x, y) {
+  if (serviceList.querySelectorAll(".snowflake").length > 60) return;
   const flake = document.createElement("span");
-  const size = 2 + Math.random() * 3;
+  const size = 2 + Math.random() * 2.5;
+  const life = 2.2 + Math.random() * 1.4;
   flake.className = "snowflake";
   flake.setAttribute("aria-hidden", "true");
   flake.style.left = `${x - size / 2}px`;
   flake.style.top = `${y - size / 2}px`;
   flake.style.setProperty("--size", `${size}px`);
-  flake.style.setProperty("--dx", `${(Math.random() - 0.5) * 40}px`);
-  flake.style.setProperty("--dy", `${20 + Math.random() * 40}px`);
-  flake.style.setProperty("--life", `${0.8 + Math.random() * 0.8}s`);
-  flake.addEventListener("animationend", () => flake.remove());
-  row.appendChild(flake);
+  flake.style.setProperty("--sway", `${(Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 10)}px`);
+  flake.style.setProperty("--dy", `${50 + Math.random() * 60}px`);
+  flake.style.setProperty("--life", `${life}s`);
+  serviceList.append(flake);
+  // Removed on a timer (not on animation end) so flakes never get stuck on screen
+  setTimeout(() => flake.remove(), life * 1000 + 100);
 }
 
 document.querySelectorAll(".service-row").forEach((row) => {
@@ -234,20 +266,19 @@ document.querySelectorAll(".service-row").forEach((row) => {
   let lastFlake = 0;
 
   const melt = () => {
-    if (!calmMotion) snowText.forEach(snowScramble);
+    if (!calmMotion()) snowText.forEach(meltText);
   };
   row.addEventListener("pointerenter", melt);
   row.addEventListener("focus", melt);
 
   row.addEventListener("pointermove", (event) => {
     const box = row.getBoundingClientRect();
-    const x = event.clientX - box.left;
-    const y = event.clientY - box.top;
-    row.style.setProperty("--x", `${x}px`);
-    row.style.setProperty("--y", `${y}px`);
-    if (!calmMotion && event.timeStamp - lastFlake > 40) {
+    row.style.setProperty("--x", `${event.clientX - box.left}px`);
+    row.style.setProperty("--y", `${event.clientY - box.top}px`);
+    if (!calmMotion() && event.timeStamp - lastFlake > 90) {
       lastFlake = event.timeStamp;
-      dropSnowflake(row, x, y);
+      const listBox = serviceList.getBoundingClientRect();
+      dropSnowflake(event.clientX - listBox.left, event.clientY - listBox.top);
     }
   });
 

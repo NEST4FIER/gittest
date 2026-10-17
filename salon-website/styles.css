@@ -159,7 +159,13 @@ a { color: var(--blue); }
 .section-intro { text-align: center; margin: 0 auto 3rem; max-width: 560px; color: var(--muted); }
 
 /* ===== Services: igloo-style list that turns to snow on hover ===== */
-.service-list { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 48px; }
+.service-list {
+  position: relative;
+  max-width: 900px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 48px;
+  overflow: hidden;
+  overflow: clip visible; /* snowflakes can fall below the list but never cause sideways scrolling */
+}
 .service-group { border-bottom: 1px solid var(--line); }
 .service-group h3 {
   font-family: var(--mono-font);
@@ -216,19 +222,36 @@ a { color: var(--blue); }
 .service-row:hover .service-name, .service-row:focus-visible .service-name { text-shadow: 0 0 18px rgba(111, 179, 255, 0.7); }
 .service-row:hover .service-arrow, .service-row:focus-visible .service-arrow { opacity: 1; transform: none; color: var(--blue); }
 
-/* Little snowflakes that drift off the mouse */
+/* Letters melt like snow: blur, drift down and fade, then softly re-form */
+.snow-word { display: inline-block; white-space: nowrap; }
+.snow-letter { display: inline-block; white-space: pre; }
+.melting .snow-letter {
+  animation: snow-melt 1.6s ease-in-out both;
+  animation-delay: calc(var(--i) * 60ms);
+}
+@keyframes snow-melt {
+  0%   { opacity: 1;    filter: blur(0);     transform: translateY(0); }
+  32%  { opacity: 0.35; filter: blur(2.5px); transform: translateY(5px); color: var(--ice); }
+  70%  { opacity: 0.35; filter: blur(2.5px); transform: translateY(-2px); color: var(--ice); }
+  100% { opacity: 1;    filter: blur(0);     transform: translateY(0); }
+}
+
+/* Snowflakes that drift slowly down from the mouse, swaying side to side */
 .snowflake {
-  position: absolute; z-index: 0;
+  position: absolute; z-index: 2;
   width: var(--size); height: var(--size);
   border-radius: 50%;
   background: var(--ice);
   box-shadow: 0 0 6px rgba(111, 179, 255, 0.9);
   pointer-events: none;
-  animation: snowfall var(--life) ease-out forwards;
+  animation: snowfall var(--life) ease-in-out forwards;
 }
 @keyframes snowfall {
-  from { opacity: 0.9; transform: translate(0, 0); }
-  to { opacity: 0; transform: translate(var(--dx), var(--dy)); }
+  0%   { opacity: 0;   transform: translate(0, 0); }
+  15%  { opacity: 0.9; }
+  35%  { transform: translate(var(--sway), calc(var(--dy) * 0.35)); }
+  65%  { transform: translate(calc(var(--sway) * -1), calc(var(--dy) * 0.65)); }
+  100% { opacity: 0;   transform: translate(calc(var(--sway) * 0.5), var(--dy)); }
 }
 
 .hours { list-style: none; }
