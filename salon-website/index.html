@@ -47,30 +47,55 @@
     <div class="container">
       <span class="label">Menu</span>
       <h2>Services &amp; Prices</h2>
-      <p class="section-intro">Color prices depend on your hair and the look you want.</p>
+      <p class="section-intro">Pick a service to book it.</p>
 
-      <div class="service-grid">
-        <div class="service-card">
+      <div class="service-list">
+        <div class="service-group">
           <h3>Hair</h3>
-          <ul>
-            <li><span>Kids' Cut <small>Ages 13 and under</small></span><span>$10</span></li>
-            <li><span>Men's Cut</span><span>$30</span></li>
-            <li><span>Women's Cut</span><span>$40 &ndash; $50</span></li>
-            <li><span>Color</span><span>$80+</span></li>
-          </ul>
+          <a class="service-row" href="#book" data-service="Kids' Cut">
+            <span class="service-name" data-snow>Kids' Cut</span>
+            <span class="service-note">Ages 13 and under</span>
+            <span class="service-price" data-snow>$10</span>
+            <span class="service-arrow" aria-hidden="true">&rarr;</span>
+          </a>
+          <a class="service-row" href="#book" data-service="Men's Cut">
+            <span class="service-name" data-snow>Men's Cut</span>
+            <span class="service-price" data-snow>$30</span>
+            <span class="service-arrow" aria-hidden="true">&rarr;</span>
+          </a>
+          <a class="service-row" href="#book" data-service="Women's Cut">
+            <span class="service-name" data-snow>Women's Cut</span>
+            <span class="service-price" data-snow>$40 &ndash; $50</span>
+            <span class="service-arrow" aria-hidden="true">&rarr;</span>
+          </a>
+          <a class="service-row" href="#book" data-service="Color">
+            <span class="service-name" data-snow>Color</span>
+            <span class="service-note">Price depends on your hair and the look you want</span>
+            <span class="service-price" data-snow>$80+</span>
+            <span class="service-arrow" aria-hidden="true">&rarr;</span>
+          </a>
         </div>
-        <div class="service-card">
+        <div class="service-group">
           <h3>Waxing &amp; Grooming</h3>
-          <ul>
-            <li><span>Eyebrow Wax</span><span>$20</span></li>
-            <li><span>Manscaping <small>Full intimate grooming, front to back</small></span><span>$69</span></li>
-          </ul>
+          <a class="service-row" href="#book" data-service="Eyebrow Wax">
+            <span class="service-name" data-snow>Eyebrow Wax</span>
+            <span class="service-price" data-snow>$20</span>
+            <span class="service-arrow" aria-hidden="true">&rarr;</span>
+          </a>
+          <a class="service-row" href="#book" data-service="Manscaping">
+            <span class="service-name" data-snow>Manscaping</span>
+            <span class="service-note">Full intimate grooming, front to back</span>
+            <span class="service-price" data-snow>$69</span>
+            <span class="service-arrow" aria-hidden="true">&rarr;</span>
+          </a>
         </div>
-        <div class="service-card">
+        <div class="service-group">
           <h3>Makeup</h3>
-          <ul>
-            <li><span>Makeup</span><span>By appointment only</span></li>
-          </ul>
+          <a class="service-row" href="#book" data-service="Makeup">
+            <span class="service-name" data-snow>Makeup</span>
+            <span class="service-price" data-snow>By appointment only</span>
+            <span class="service-arrow" aria-hidden="true">&rarr;</span>
+          </a>
         </div>
       </div>
     </div>

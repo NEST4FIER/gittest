@@ -158,36 +158,86 @@ a { color: var(--blue); }
 .section-dark .label { text-align: left; }
 .section-intro { text-align: center; margin: 0 auto 3rem; max-width: 560px; color: var(--muted); }
 
-/* ===== Services: frosted glass cards ===== */
-.service-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
-.service-card {
+/* ===== Services: igloo-style list that turns to snow on hover ===== */
+.service-list { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 48px; }
+.service-group { border-bottom: 1px solid var(--line); }
+.service-group h3 {
+  font-family: var(--mono-font);
+  font-size: 0.75rem; font-weight: 400;
+  letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 12px;
+}
+.service-row {
   position: relative;
-  background: linear-gradient(160deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 30px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: border-color 0.4s, box-shadow 0.4s, transform 0.4s;
+  overflow: hidden;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 24px;
+  padding: 22px 16px;
+  border-top: 1px solid var(--line);
+  color: var(--text);
+  text-decoration: none;
 }
-.service-card:hover {
-  border-color: rgba(111, 179, 255, 0.5);
-  box-shadow: 0 0 40px rgba(111, 179, 255, 0.15);
-  transform: translateY(-4px);
+/* Icy glow that follows the mouse */
+.service-row::before {
+  content: "";
+  position: absolute; inset: 0; z-index: -1;
+  background: radial-gradient(260px circle at var(--x, 50%) var(--y, 50%), rgba(111, 179, 255, 0.18), transparent 65%);
+  opacity: 0;
+  transition: opacity 0.4s;
 }
-.service-card h3 { color: var(--white); }
-.service-card ul, .hours { list-style: none; }
-.service-card li, .hours li {
+.service-row:hover::before, .service-row:focus-visible::before { opacity: 1; }
+.service-row:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+.service-name {
+  grid-column: 1;
+  font-family: var(--mono-font);
+  font-size: clamp(1.05rem, 2.4vw, 1.5rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--white);
+  white-space: nowrap;
+  transition: text-shadow 0.4s;
+}
+.service-note { grid-column: 1; font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+.service-price {
+  grid-column: 2; grid-row: 1 / span 2;
+  font-family: var(--mono-font); font-size: 0.95rem;
+  color: var(--ice); white-space: nowrap; text-align: right;
+}
+.service-arrow {
+  grid-column: 3; grid-row: 1 / span 2;
+  font-family: var(--mono-font); color: var(--muted);
+  opacity: 0.4; transform: translateX(-8px);
+  transition: opacity 0.4s, transform 0.4s, color 0.4s;
+}
+.service-row:hover .service-name, .service-row:focus-visible .service-name { text-shadow: 0 0 18px rgba(111, 179, 255, 0.7); }
+.service-row:hover .service-arrow, .service-row:focus-visible .service-arrow { opacity: 1; transform: none; color: var(--blue); }
+
+/* Little snowflakes that drift off the mouse */
+.snowflake {
+  position: absolute; z-index: 0;
+  width: var(--size); height: var(--size);
+  border-radius: 50%;
+  background: var(--ice);
+  box-shadow: 0 0 6px rgba(111, 179, 255, 0.9);
+  pointer-events: none;
+  animation: snowfall var(--life) ease-out forwards;
+}
+@keyframes snowfall {
+  from { opacity: 0.9; transform: translate(0, 0); }
+  to { opacity: 0; transform: translate(var(--dx), var(--dy)); }
+}
+
+.hours { list-style: none; }
+.hours li {
   display: flex; justify-content: space-between; gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid var(--line);
 }
-.service-card li:last-child, .hours li:last-child { border-bottom: none; }
-.service-card li span:last-child {
-  font-family: var(--mono-font); font-size: 0.9rem;
-  white-space: nowrap; color: var(--ice);
-}
-.service-card small { display: block; font-size: 0.8rem; color: var(--muted); }
+.hours li:last-child { border-bottom: none; }
 .hours li span:last-child { font-family: var(--mono-font); font-size: 0.9rem; color: var(--ice); }
 
 /* ===== About ===== */
@@ -278,6 +328,8 @@ a { color: var(--blue); }
   .hero { padding: 60px 0 80px; }
   .hero-logo { width: 140px; height: 140px; }
   .hero h1 { font-size: 2.8rem; }
+  .service-row { padding: 18px 8px; column-gap: 14px; }
+  .service-name { white-space: normal; }
   .about, .contact-grid, .form-row { grid-template-columns: 1fr; }
   .section { padding: 72px 0; }
   h2 { font-size: 2rem; }

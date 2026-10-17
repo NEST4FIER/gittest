@@ -178,5 +178,83 @@ document.querySelectorAll("[data-scramble]").forEach((el) => {
   }, 45);
 });
 
+// Services list: when the mouse passes over a service, its name and price melt into
+// snow and re-form (like the links on igloo.inc), an icy glow follows the mouse,
+// and little snowflakes drift off the cursor. Clicking a service picks it in the booking form.
+const SNOW = "*·•°+×.:";
+
+function snowScramble(el) {
+  if (!el.dataset.text) el.dataset.text = el.textContent;
+  const chars = [...el.dataset.text];
+  // Each letter turns to snow in a wave from left to right, then settles back
+  const melt = chars.map((_, i) => i * 0.6);
+  const settle = melt.map((m) => m + 6 + Math.random() * 6);
+  const lastFrame = Math.max(...settle);
+  let frame = 0;
+  clearInterval(el.snowTimer);
+  el.snowTimer = setInterval(() => {
+    el.textContent = chars
+      .map((ch, i) => {
+        if (ch === " " || frame < melt[i] || frame >= settle[i]) return ch;
+        return SNOW[Math.floor(Math.random() * SNOW.length)];
+      })
+      .join("");
+    frame++;
+    if (frame > lastFrame) {
+      clearInterval(el.snowTimer);
+      el.textContent = el.dataset.text;
+    }
+  }, 35);
+}
+
+function dropSnowflake(row, x, y) {
+  const flake = document.createElement("span");
+  const size = 2 + Math.random() * 3;
+  flake.className = "snowflake";
+  flake.setAttribute("aria-hidden", "true");
+  flake.style.left = `${x - size / 2}px`;
+  flake.style.top = `${y - size / 2}px`;
+  flake.style.setProperty("--size", `${size}px`);
+  flake.style.setProperty("--dx", `${(Math.random() - 0.5) * 40}px`);
+  flake.style.setProperty("--dy", `${20 + Math.random() * 40}px`);
+  flake.style.setProperty("--life", `${0.8 + Math.random() * 0.8}s`);
+  flake.addEventListener("animationend", () => flake.remove());
+  row.appendChild(flake);
+}
+
+document.querySelectorAll(".service-row").forEach((row) => {
+  const snowText = row.querySelectorAll("[data-snow]");
+  // Screen readers get the plain words, never the snow symbols
+  row.setAttribute(
+    "aria-label",
+    [...row.querySelectorAll(".service-name, .service-note, .service-price")]
+      .map((el) => el.textContent.trim())
+      .join(", ") + ". Book this service."
+  );
+  let lastFlake = 0;
+
+  const melt = () => {
+    if (!calmMotion) snowText.forEach(snowScramble);
+  };
+  row.addEventListener("pointerenter", melt);
+  row.addEventListener("focus", melt);
+
+  row.addEventListener("pointermove", (event) => {
+    const box = row.getBoundingClientRect();
+    const x = event.clientX - box.left;
+    const y = event.clientY - box.top;
+    row.style.setProperty("--x", `${x}px`);
+    row.style.setProperty("--y", `${y}px`);
+    if (!calmMotion && event.timeStamp - lastFlake > 40) {
+      lastFlake = event.timeStamp;
+      dropSnowflake(row, x, y);
+    }
+  });
+
+  row.addEventListener("click", () => {
+    form.elements.service.value = row.dataset.service;
+  });
+});
+
 // Keep the footer year up to date
 document.getElementById("year").textContent = new Date().getFullYear();
