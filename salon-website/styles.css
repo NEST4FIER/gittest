@@ -100,6 +100,7 @@ a { color: var(--main-dark); }
 }
 .service-card li:last-child, .hours li:last-child { border-bottom: none; }
 .service-card li span:last-child { font-weight: 600; white-space: nowrap; }
+.service-card small { display: block; font-size: 0.85rem; color: #7a6e71; }
 .hours li { border-bottom-color: rgba(255,255,255,0.15); }
 
 /* ===== About ===== */
