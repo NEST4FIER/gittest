@@ -15,17 +15,49 @@ links.querySelectorAll("a").forEach((link) => {
   });
 });
 
-// Booking form: show a thank-you message.
-// Note: this does not send the request anywhere yet. To receive bookings
-// by email, connect the form to a service like Formspree or Netlify Forms.
+// Booking form: email each request to the salon using FormSubmit (formsubmit.co).
+// The very first request sends an activation email to this address.
+// Click the link in that email once, and every request after that arrives in your inbox.
+const SALON_EMAIL = "myworksemail2113@gmail.com";
+
 const form = document.getElementById("booking-form");
 const message = document.getElementById("form-message");
+const submitButton = form.querySelector("button[type='submit']");
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const name = form.elements.name.value.trim();
-  message.textContent = `Thanks, ${name}! We'll reach out soon to confirm your appointment.`;
-  form.reset();
+
+  submitButton.disabled = true;
+  submitButton.textContent = "Sending...";
+  message.textContent = "";
+
+  try {
+    const response = await fetch(`https://formsubmit.co/ajax/${SALON_EMAIL}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        _subject: `New booking request from ${name}`,
+        _template: "table",
+        _captcha: "false",
+        Name: name,
+        Phone: form.elements.phone.value,
+        Service: form.elements.service.value,
+        Date: form.elements.date.value,
+        Time: form.elements.time.value,
+        Notes: form.elements.notes.value,
+      }),
+    });
+    if (!response.ok) throw new Error("Request failed");
+
+    message.textContent = `Thanks, ${name}! I'll reach out soon to confirm your appointment.`;
+    form.reset();
+  } catch (error) {
+    message.textContent = "Sorry, your request didn't go through. Please call or text (928) 793-2425 to book.";
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Send Request";
+  }
 });
 
 // Keep the footer year up to date
