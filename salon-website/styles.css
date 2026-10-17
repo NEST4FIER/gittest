@@ -157,6 +157,23 @@ a { color: var(--link); }
 .contact-grid p { margin-bottom: 1rem; }
 .footer { background: #000000; color: #9a9aa0; text-align: center; padding: 24px 0; font-size: 0.9rem; }
 
+/* ===== Music button ===== */
+.music-toggle {
+  position: fixed;
+  right: calc(20px + env(safe-area-inset-right, 0px));
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 20;
+  background: var(--dark);
+  color: var(--white);
+  border: 2px solid var(--main);
+  border-radius: 40px;
+  padding: 10px 18px;
+  font: 600 0.95rem var(--body-font);
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+.music-toggle:hover, .music-toggle[aria-pressed="true"] { background: var(--main); }
+
 /* ===== Phones & small screens ===== */
 @media (max-width: 800px) {
   .menu-toggle { display: block; }

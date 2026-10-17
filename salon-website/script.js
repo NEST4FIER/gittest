@@ -60,5 +60,84 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
+// Background music: calm spa-style chords made by the browser (no song file needed).
+// Browsers only allow sound after a visitor taps something, so it starts from the button.
+const musicButton = document.getElementById("music-toggle");
+const CHORD_SECONDS = 6;
+const CHORDS = [
+  [261.63, 329.63, 392.0, 493.88], // C major 7
+  [220.0, 261.63, 329.63, 392.0],  // A minor 7
+  [174.61, 220.0, 261.63, 329.63], // F major 7
+  [196.0, 246.94, 293.66, 392.0],  // G
+];
+let audio, master, filter, musicTimer, suspendTimer, chordIndex = 0;
+
+function playChord(notes, start) {
+  notes.forEach((freq) => {
+    // Soft, slow pad
+    ["sine", "triangle"].forEach((type, i) => {
+      const osc = audio.createOscillator();
+      const gain = audio.createGain();
+      osc.type = type;
+      osc.frequency.value = i ? freq / 2 : freq;
+      osc.detune.value = (Math.random() - 0.5) * 8;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.04, start + 2);
+      gain.gain.linearRampToValueAtTime(0, start + CHORD_SECONDS + 2);
+      osc.connect(gain).connect(filter);
+      osc.start(start);
+      osc.stop(start + CHORD_SECONDS + 2.5);
+    });
+  });
+  // A few gentle bell notes on top
+  for (let beat = 0; beat < 3; beat++) {
+    const t = start + beat * (CHORD_SECONDS / 3) + 0.5;
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.type = "sine";
+    osc.frequency.value = notes[Math.floor(Math.random() * notes.length)] * 2;
+    gain.gain.setValueAtTime(0.03, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 2.5);
+    osc.connect(gain).connect(filter);
+    osc.start(t);
+    osc.stop(t + 2.6);
+  }
+}
+
+function nextChord() {
+  playChord(CHORDS[chordIndex], audio.currentTime + 0.1);
+  chordIndex = (chordIndex + 1) % CHORDS.length;
+}
+
+musicButton.addEventListener("click", async () => {
+  const isPlaying = musicButton.getAttribute("aria-pressed") === "true";
+
+  if (isPlaying) {
+    clearInterval(musicTimer);
+    master.gain.setTargetAtTime(0, audio.currentTime, 0.3);
+    suspendTimer = setTimeout(() => audio.suspend(), 1500);
+    musicButton.setAttribute("aria-pressed", "false");
+    musicButton.innerHTML = "&#9835; Play music";
+    return;
+  }
+
+  if (!audio) {
+    audio = new (window.AudioContext || window.webkitAudioContext)();
+    filter = audio.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 1800;
+    master = audio.createGain();
+    master.gain.value = 0;
+    filter.connect(master).connect(audio.destination);
+  }
+  clearTimeout(suspendTimer);
+  await audio.resume();
+  master.gain.setTargetAtTime(0.8, audio.currentTime, 0.5);
+  nextChord();
+  musicTimer = setInterval(nextChord, CHORD_SECONDS * 1000);
+  musicButton.setAttribute("aria-pressed", "true");
+  musicButton.innerHTML = "&#10074;&#10074; Pause music";
+});
+
 // Keep the footer year up to date
 document.getElementById("year").textContent = new Date().getFullYear();
