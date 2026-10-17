@@ -105,7 +105,7 @@ musicButton.addEventListener("click", async () => {
 // Visitors can ask their phone or computer for less motion; check it live so changes apply right away
 const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 const calmMotion = () => motionQuery.matches;
-let frostRunning = false;
+let frostFrame = 0; // the one drawing frame that's waiting to run, so there's never more than one
 
 // Welcome banner: slow, drifting ice particles that glow and twinkle
 const frost = document.getElementById("frost");
@@ -128,7 +128,12 @@ function sizeFrost() {
   }));
 }
 
+function scheduleFrost() {
+  if (!frostFrame) frostFrame = requestAnimationFrame(drawFrost);
+}
+
 function drawFrost(time) {
+  frostFrame = 0;
   const w = frost.offsetWidth;
   const h = frost.offsetHeight;
   ctx.clearRect(0, 0, w, h);
@@ -148,19 +153,18 @@ function drawFrost(time) {
       if (f.x > w + 5) f.x = -5;
     }
   });
-  frostRunning = !calmMotion();
-  if (frostRunning) requestAnimationFrame(drawFrost);
+  if (!calmMotion()) scheduleFrost();
 }
 
 sizeFrost();
-requestAnimationFrame(drawFrost);
+scheduleFrost();
 window.addEventListener("resize", () => {
   sizeFrost();
-  if (!frostRunning) requestAnimationFrame(drawFrost);
+  scheduleFrost();
 });
-motionQuery.addEventListener("change", () => {
-  if (!frostRunning) requestAnimationFrame(drawFrost);
-});
+// Older iPhones (iOS 13 and earlier) only know the older addListener
+if (motionQuery.addEventListener) motionQuery.addEventListener("change", scheduleFrost);
+else motionQuery.addListener(scheduleFrost);
 
 // Salon name "decodes" from random characters when the page loads
 document.querySelectorAll("[data-scramble]").forEach((el) => {
