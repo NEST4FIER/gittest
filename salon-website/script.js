@@ -102,5 +102,81 @@ musicButton.addEventListener("click", async () => {
   }
 });
 
+const calmMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Welcome banner: slow, drifting ice particles that glow and twinkle
+const frost = document.getElementById("frost");
+const ctx = frost.getContext("2d");
+let flakes = [];
+
+function sizeFrost() {
+  const ratio = window.devicePixelRatio || 1;
+  frost.width = frost.offsetWidth * ratio;
+  frost.height = frost.offsetHeight * ratio;
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  const count = Math.round((frost.offsetWidth * frost.offsetHeight) / 9000);
+  flakes = Array.from({ length: count }, () => ({
+    x: Math.random() * frost.offsetWidth,
+    y: Math.random() * frost.offsetHeight,
+    r: Math.random() * 1.6 + 0.3,
+    speed: Math.random() * 0.25 + 0.05,
+    drift: Math.random() * 0.4 - 0.2,
+    phase: Math.random() * Math.PI * 2,
+  }));
+}
+
+function drawFrost(time) {
+  const w = frost.offsetWidth;
+  const h = frost.offsetHeight;
+  ctx.clearRect(0, 0, w, h);
+  flakes.forEach((f) => {
+    const twinkle = 0.45 + 0.55 * Math.sin(time / 900 + f.phase);
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(215, 235, 255, ${0.15 + twinkle * 0.6})`;
+    ctx.shadowColor = "rgba(111, 179, 255, 0.9)";
+    ctx.shadowBlur = f.r * 6;
+    ctx.fill();
+    if (!calmMotion) {
+      f.y -= f.speed;
+      f.x += f.drift + Math.sin(time / 3000 + f.phase) * 0.15;
+      if (f.y < -5) { f.y = h + 5; f.x = Math.random() * w; }
+      if (f.x < -5) f.x = w + 5;
+      if (f.x > w + 5) f.x = -5;
+    }
+  });
+  if (!calmMotion) requestAnimationFrame(drawFrost);
+}
+
+sizeFrost();
+requestAnimationFrame(drawFrost);
+window.addEventListener("resize", () => {
+  sizeFrost();
+  if (calmMotion) requestAnimationFrame(drawFrost);
+});
+
+// Salon name "decodes" from random characters when the page loads
+document.querySelectorAll("[data-scramble]").forEach((el) => {
+  if (calmMotion) return;
+  const finalText = el.textContent;
+  const glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#*/<>[]";
+  el.setAttribute("aria-label", finalText);
+  let frame = 0;
+  const timer = setInterval(() => {
+    el.textContent = finalText
+      .split("")
+      .map((ch, i) => {
+        if (ch === " " || i < frame / 3) return ch;
+        return glyphs[Math.floor(Math.random() * glyphs.length)];
+      })
+      .join("");
+    frame++;
+    if (frame / 3 > finalText.length) {
+      clearInterval(timer);
+      el.textContent = finalText;
+    }
+  }, 45);
+});
+
 // Keep the footer year up to date
 document.getElementById("year").textContent = new Date().getFullYear();

@@ -7,7 +7,7 @@
   <meta name="description" content="Fier Salon is a charming, discreet one-chair salon in Fort Lauderdale, FL offering cuts, color, waxing, manscaping and makeup. Book your appointment today.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" href="images/logo.jpg">
 </head>
@@ -29,10 +29,11 @@
 
   <!-- ========== BIG WELCOME SECTION ========== -->
   <section id="home" class="hero">
+    <canvas id="frost" class="frost" aria-hidden="true"></canvas>
     <div class="container hero-inner">
       <img class="hero-logo" src="images/logo.jpg" alt="Fier Salon logo: Fier Salon, Exotic Hair &amp; Makeup">
       <p class="eyebrow">Hair &middot; Color &middot; Makeup &middot; Grooming</p>
-      <h1>Fier Salon</h1>
+      <h1 data-scramble>Fier Salon</h1>
       <p class="hero-text">Everyone leaves as a Fierce, Individual, Everyone, Remembers.</p>
       <div class="hero-buttons">
         <a href="#book" class="btn">Book an Appointment</a>
@@ -44,6 +45,7 @@
   <!-- ========== SERVICES & PRICES ========== -->
   <section id="services" class="section">
     <div class="container">
+      <span class="label">Menu</span>
       <h2>Services &amp; Prices</h2>
       <p class="section-intro">Color prices depend on your hair and the look you want.</p>
 
@@ -81,6 +83,7 @@
         <span>Add a photo of your salon here</span>
       </div>
       <div>
+        <span class="label">The Chair</span>
         <h2>About Fier Salon</h2>
         <p>Fier Salon is a one-chair salon with a very charming feel. It's private and discreet, and every client gets my full attention. Many clients say a visit here feels like a session with a therapist.</p>
         <p>I started doing hair to help people find the confidence they already have but have lost touch with. When you sit in my chair, you're my only client, and I'm here for you.</p>
@@ -92,6 +95,7 @@
   <!-- ========== BOOKING FORM ========== -->
   <section id="book" class="section">
     <div class="container narrow">
+      <span class="label">Reservations</span>
       <h2>Book an Appointment</h2>
       <p class="section-intro">Open Tuesday through Saturday, noon to 4pm. Fill this out and I'll call or text you to confirm.</p>
 
@@ -136,12 +140,14 @@
   <section id="contact" class="section section-dark">
     <div class="container contact-grid">
       <div>
+        <span class="label">Find Us</span>
         <h2>Visit Us</h2>
         <p>5340 NE 3rd Ter<br>Fort Lauderdale, FL 33334</p>
         <p><a href="tel:+19287932425">(928) 793-2425</a><br>
            <a href="mailto:myworksemail2113@gmail.com">myworksemail2113@gmail.com</a></p>
       </div>
       <div>
+        <span class="label">Open</span>
         <h2>Hours</h2>
         <ul class="hours">
           <li><span>Tuesday &ndash; Saturday</span><span>12pm &ndash; 4pm</span></li>
