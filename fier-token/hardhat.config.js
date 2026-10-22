@@ -6,7 +6,11 @@ const accounts = vars.has("PRIVATE_KEY") ? [vars.get("PRIVATE_KEY")] : [];
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.28",
+  solidity: {
+    version: "0.8.28",
+    // Base supports Cancun, and OpenZeppelin's voting code needs it.
+    settings: { evmVersion: "cancun" },
+  },
   networks: {
     // Free test network for Base. Practice here first.
     baseSepolia: {

@@ -8,9 +8,11 @@ async function main() {
   await token.waitForDeployment();
 
   const address = await token.getAddress();
-  const supply = ethers.formatUnits(await token.totalSupply(), 18);
+  const creatorSupply = ethers.formatUnits(await token.CREATOR_SUPPLY(), 18);
+  const mineable = ethers.formatUnits(await token.MINEABLE_SUPPLY(), 18);
   console.log(`FIER deployed at: ${address}`);
-  console.log(`${supply} FIER sent to ${deployer.address}`);
+  console.log(`${creatorSupply} FIER sent to ${deployer.address}`);
+  console.log(`${mineable} FIER are waiting to be mined. Mining is open to everyone now.`);
 }
 
 main().catch((error) => {
