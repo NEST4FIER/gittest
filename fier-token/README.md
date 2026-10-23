@@ -5,6 +5,19 @@
 
 FIER is a standard **ERC-20** token, the most common token format in crypto. Wallets (MetaMask, Coinbase Wallet), exchanges and block explorers all understand it. It runs on **Base**, a network built on top of Ethereum where fees are usually a few cents.
 
+## Live on Base
+
+| | |
+|---|---|
+| Token address | `0xcaf5dfa707bcca0240254c64ab615dce03362c12` |
+| Network | Base (chain ID 8453) |
+| Explorer | [basescan.org/token/0xcaf5…2c12](https://basescan.org/token/0xcaf5dfa707bcca0240254c64ab615dce03362c12) |
+| Source code | Verified, exact match, on [Basescan](https://basescan.org/address/0xcaf5dfa707bcca0240254c64ab615dce03362c12#code), [Sourcify](https://repo.sourcify.dev/8453/0xcaf5Dfa707bCCa0240254c64Ab615DCE03362C12) and [Blockscout](https://base.blockscout.com/address/0xcaf5dfa707bcca0240254c64ab615dce03362c12) |
+| Launch transaction | [0xdc4e…7989](https://basescan.org/tx/0xdc4efc6f36674673b72644c14c3b05f4e4f789139a1aac7591e7f051d0cc7989) |
+| Build settings | Solidity 0.8.28, optimizer off, EVM version cancun |
+
+To see FIER in MetaMask: switch to Base, choose **Import tokens**, and paste the token address.
+
 ## What the token does
 
 | Setting | Value |
@@ -92,12 +105,25 @@ npx hardhat verify --network base YOUR_TOKEN_ADDRESS
 
 ## Mining FIER
 
-Anyone can mine once the token is live. Each reward claim is a small transaction, so the miner's wallet needs a little ETH on Base to pay fees.
+Anyone can mine. Each reward claim is a small transaction, so the miner's wallet needs a little ETH on Base to pay fees (usually a fraction of a cent per claim).
+
+### In your browser (easiest)
+
+[`miner/index.html`](miner/index.html) is a one-page miner:
+1. Connect MetaMask.
+2. Press **Start mining**. It guesses on all your processor cores.
+3. Approve each reward claim in MetaMask.
+
+It never asks for a private key or recovery phrase.
+
+It's a single file with no build step and no outside code, so it works on any static web host. For example, turn on GitHub Pages for this repository and open `/fier-token/miner/`.
+
+### From the command line
 
 ```bash
 npx hardhat vars set PRIVATE_KEY      # the mining wallet's private key
-npx hardhat vars set FIER_ADDRESS     # the token's address
-npm run mine:testnet                  # or: npm run mine:mainnet
+npx hardhat vars set FIER_ADDRESS     # 0xcaf5dfa707bcca0240254c64ab615dce03362c12
+npm run mine:mainnet
 ```
 
 Leave it running. It prints each reward it claims. Press `Ctrl + C` to stop.

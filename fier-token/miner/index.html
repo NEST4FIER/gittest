@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FIER Miner</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Mine FIER on the Base network from your browser. Every reward is claimed with a MetaMask transaction you approve.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a one-column precinct tally sheet. Mining station first, then the ruled count, then the ledger of what happened. */
+:root {
+  --paper: #ECF0F5;
+  --sheet: #F9FAFC;
+  --ink: #13213A;
+  --muted: #56627A;
+  --rule: #C7D0DD;
+  --accent: #1D4ED8;
+  --accent-ink: #FFFFFF;
+  --stamp: #B3222C;
+  --ok: #17724A;
+  --warn: #9A5B00;
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0C131D; --sheet: #131C29; --ink: #E5EAF2; --muted: #9AA5B7; --rule: #283446;
+    --accent: #7C9DFF; --accent-ink: #0C131D; --stamp: #FF6B6B; --ok: #4CC38A; --warn: #E3A33B;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0C131D; --sheet: #131C29; --ink: #E5EAF2; --muted: #9AA5B7; --rule: #283446;
+  --accent: #7C9DFF; --accent-ink: #0C131D; --stamp: #FF6B6B; --ok: #4CC38A; --warn: #E3A33B;
+  color-scheme: dark;
+}
+
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.55 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+}
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.wrap { max-width: 780px; margin: 0 auto; display: grid; gap: 36px; }
+.stack { display: grid; gap: 36px; min-width: 0; }
+
+/* Masthead */
+.masthead { display: grid; gap: 10px; }
+.brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.brand h1 {
+  margin: 0; font: 800 clamp(64px, 16vw, 104px)/0.85 var(--display);
+  letter-spacing: 0.01em; text-transform: uppercase;
+}
+.brand .tag {
+  font: 700 22px/1 var(--display); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted);
+}
+.mission { margin: 0; max-width: 62ch; font-size: 19px; line-height: 1.45; text-wrap: balance; }
+.meta {
+  margin: 0; font: 500 12px/1.6 var(--mono); color: var(--muted);
+  letter-spacing: 0.04em; text-transform: uppercase;
+  display: flex; gap: 6px 14px; flex-wrap: wrap;
+}
+
+/* Mining station */
+.station {
+  position: relative; background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px;
+  padding: 24px; display: grid; gap: 18px; overflow: hidden;
+}
+.counter { display: grid; gap: 2px; }
+.counter output {
+  font: 800 clamp(64px, 17vw, 120px)/0.9 var(--display);
+  font-variant-numeric: tabular-nums; letter-spacing: 0.01em;
+}
+.counter small { font-size: 14px; color: var(--muted); }
+.controls { display: flex; gap: 14px 20px; align-items: center; flex-wrap: wrap; }
+button, a.primary {
+  font: 600 16px/1 var(--body); border-radius: 4px; cursor: pointer;
+  padding: 14px 22px; border: 2px solid var(--accent); text-decoration: none;
+}
+.primary { background: var(--accent); color: var(--accent-ink); }
+.primary:hover { filter: brightness(1.08); }
+.primary[data-mode="stop"] { background: transparent; color: var(--accent); }
+.secondary { background: transparent; color: var(--accent); padding: 10px 16px; font-size: 14px; }
+button:disabled { opacity: 0.55; cursor: not-allowed; }
+.threads { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
+.threads input { accent-color: var(--accent); width: 130px; }
+.threads output { font: 500 14px var(--mono); color: var(--ink); min-width: 2ch; }
+.status { margin: 0; font-size: 15px; min-height: 1.55em; }
+.status[data-tone="warn"] { color: var(--warn); }
+
+.stamp {
+  position: absolute; top: 18px; right: 18px;
+  font: 800 34px/1 var(--display); letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--stamp); border: 4px solid var(--stamp); border-radius: 4px; padding: 8px 14px 6px;
+  transform: rotate(-9deg); pointer-events: none;
+  animation: stamp 420ms cubic-bezier(.2, 1.4, .4, 1) both;
+}
+@keyframes stamp { from { transform: rotate(-9deg) scale(2.2); opacity: 0; } to { transform: rotate(-9deg) scale(1); opacity: 0.92; } }
+
+/* Tally of the contract's numbers */
+.section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+h2 {
+  margin: 0; font: 700 26px/1.1 var(--display); text-transform: uppercase; letter-spacing: 0.06em;
+}
+.note { margin: 0; font-size: 13px; color: var(--muted); }
+.tally {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  border-top: 2px solid var(--ink); margin-top: 12px;
+}
+.tally > div {
+  padding: 14px 16px 16px 0; border-bottom: 1px solid var(--rule); display: grid; gap: 4px; min-width: 0;
+}
+.label { font: 600 12px/1.3 var(--body); text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); }
+.value { font: 700 30px/1.1 var(--display); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.sub { font-size: 13px; color: var(--muted); }
+.bar { height: 6px; background: var(--rule); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+.bar span { display: block; height: 100%; width: 0; background: var(--accent); min-width: 2px; }
+
+/* Wallet */
+.wallet { display: grid; gap: 12px; }
+.wallet-row {
+  display: flex; gap: 12px 28px; flex-wrap: wrap; align-items: end;
+  border-top: 2px solid var(--ink); padding-top: 14px;
+}
+.wallet-row > div { display: grid; gap: 4px; min-width: 0; }
+.addr { font: 500 14px var(--mono); overflow-wrap: anywhere; }
+
+/* Ledger */
+.ledger ol { list-style: none; margin: 12px 0 0; padding: 0; border-top: 2px solid var(--ink); }
+.ledger li {
+  display: grid; grid-template-columns: 9ch 1fr; gap: 12px; padding: 10px 0;
+  border-bottom: 1px solid var(--rule); font-size: 15px; min-width: 0;
+}
+.ledger time { font: 400 13px/1.7 var(--mono); color: var(--muted); }
+.ledger li > div { min-width: 0; overflow-wrap: anywhere; }
+.ledger li[data-tone="ok"] { color: var(--ok); }
+.ledger li[data-tone="warn"] { color: var(--warn); }
+.ledger li a { margin-left: 6px; font-size: 13px; }
+
+/* How it works */
+.how ol { margin: 12px 0 0; padding-left: 1.4em; display: grid; gap: 8px; max-width: 65ch; }
+.safety {
+  margin: 16px 0 0; padding: 14px 16px; border: 1px dashed var(--rule); border-radius: 4px;
+  font-size: 14px; max-width: 65ch;
+}
+footer { font-size: 13px; color: var(--muted); display: flex; gap: 8px 18px; flex-wrap: wrap; }
+footer code { font-family: var(--mono); overflow-wrap: anywhere; }
+
+@media (max-width: 480px) {
+  .station { padding: 18px; }
+  .stamp { font-size: 24px; top: 12px; right: 12px; }
+  .ledger li { grid-template-columns: 1fr; gap: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .stamp { animation: none; opacity: 0.92; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div class="brand"><h1>FIER</h1><span class="tag">Miner</span></div>
+    <p class="mission">&ldquo;FIER: power to the people. Mined by the many, controlled by no one, to help restore democracy in the USA.&rdquo;</p>
+    <p class="meta"><span>Base network</span><span>Chain 8453</span><span>Contract verified on Basescan</span></p>
+  </header>
+
+  <main class="stack">
+    <section class="station" aria-labelledby="station-title">
+      <h2 id="station-title" hidden>Mining station</h2>
+      <div class="counter">
+        <output id="rate" aria-live="off">0</output>
+        <small>guesses per second on this device</small>
+      </div>
+      <div class="controls">
+        <button id="primary" class="primary" type="button">Connect MetaMask</button>
+        <a id="get-metamask" class="primary" href="https://metamask.io/download/" target="_blank" rel="noopener" hidden>Get MetaMask</a>
+        <label class="threads" for="threads">Processor threads
+          <input id="threads" type="range" min="1" max="4" value="2">
+          <output id="threads-out">2</output>
+        </label>
+      </div>
+      <p id="status" class="status" aria-live="polite">Connect MetaMask to start mining.</p>
+      <div id="stamp" class="stamp" hidden>Solved</div>
+    </section>
+
+    <section aria-labelledby="tally-title">
+      <div class="section-head">
+        <h2 id="tally-title">The count</h2>
+        <p id="stats-note" class="note">Live numbers appear once your wallet is on Base.</p>
+      </div>
+      <div class="tally">
+        <div>
+          <span class="label">Mined so far</span>
+          <span class="value" id="mined">&mdash;</span>
+          <span class="sub">of 1,800,000,000 mineable FIER</span>
+          <div class="bar" aria-hidden="true"><span id="mined-bar"></span></div>
+        </div>
+        <div>
+          <span class="label">Rewards paid</span>
+          <span class="value" id="rewards">&mdash;</span>
+          <span class="sub" id="halving">Halves every 180,000 rewards</span>
+        </div>
+        <div>
+          <span class="label">Reward right now</span>
+          <span class="value" id="reward">5,000 FIER</span>
+          <span class="sub">per puzzle solved</span>
+        </div>
+        <div>
+          <span class="label">Puzzle difficulty</span>
+          <span class="value" id="difficulty">&mdash;</span>
+          <span class="sub">guesses per reward, on average</span>
+        </div>
+        <div>
+          <span class="label">Your time per reward</span>
+          <span class="value" id="eta">&mdash;</span>
+          <span class="sub">estimated from this device&rsquo;s speed while mining, if nobody else is mining</span>
+        </div>
+        <div>
+          <span class="label">Guesses made</span>
+          <span class="value" id="guesses">0</span>
+          <span class="sub">by this device since the page opened</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="wallet" aria-labelledby="wallet-title">
+      <h2 id="wallet-title">Your wallet</h2>
+      <div class="wallet-row">
+        <div><span class="label">Address</span><span class="addr" id="account">Not connected</span></div>
+        <div><span class="label">FIER balance</span><span class="value" id="balance">&mdash;</span></div>
+        <button id="watch" class="secondary" type="button" disabled>Add FIER to MetaMask</button>
+      </div>
+    </section>
+
+    <section class="ledger" aria-labelledby="ledger-title">
+      <h2 id="ledger-title">Ledger</h2>
+      <ol id="log" aria-live="polite"></ol>
+    </section>
+
+    <section class="how" aria-labelledby="how-title">
+      <h2 id="how-title">How mining works</h2>
+      <ol>
+        <li>Connect MetaMask and switch to the Base network. This page will offer to switch for you.</li>
+        <li>Press <strong>Start mining</strong>. Your computer makes millions of guesses, looking for a number that solves the current puzzle.</li>
+        <li>When it finds one, MetaMask asks you to approve a claim. Approve it and the reward lands in your wallet. Then a new puzzle starts.</li>
+      </ol>
+      <p class="safety">This page never asks for your recovery phrase or private key. Every claim is a normal MetaMask transaction that you approve, and the network fee on Base is usually a fraction of a cent. If someone else solves the puzzle first, your claim is cancelled before it is sent and mining moves on to the next puzzle.</p>
+    </section>
+  </main>
+
+  <footer>
+    <span>Contract <code>0xcaf5dfa707bcca0240254c64ab615dce03362c12</code></span>
+    <a href="https://basescan.org/token/0xcaf5dfa707bcca0240254c64ab615dce03362c12" target="_blank" rel="noopener">Basescan</a>
+    <a href="https://github.com/NEST4FIER/gittest/tree/claude/salon-work-website-95l1m7/fier-token" target="_blank" rel="noopener">Source code</a>
+  </footer>
+</div>
+
+<script>
+// The hashing engine. It runs inside Web Workers (one per thread), so this function must not use anything
+// from the surrounding page. It computes keccak256(abi.encode(challenge, miner, nonce)) exactly like the contract.
+function minerEngine(post) {
+  // Keccak-f[1600] with each 64-bit lane stored as two 32-bit words: [low, high].
+  const RC = new Int32Array(48), ROT = new Uint8Array(25), PI = new Uint8Array(25);
+  const X1 = [1, 2, 3, 4, 0], X2 = [2, 3, 4, 0, 1], X4 = [4, 0, 1, 2, 3];
+  let lfsr = 1;
+  const rcBit = () => { const out = lfsr & 1; lfsr <<= 1; if (lfsr & 0x100) lfsr ^= 0x171; return out; };
+  for (let i = 0; i < 24; i++) {
+    let lo = 0, hi = 0;
+    for (let j = 0; j < 7; j++) {
+      if (rcBit()) { const p = (1 << j) - 1; if (p < 32) lo |= 1 << p; else hi |= 1 << (p - 32); }
+    }
+    RC[2 * i] = lo; RC[2 * i + 1] = hi;
+  }
+  for (let t = 0, x = 1, y = 0; t < 24; t++) {
+    ROT[x + 5 * y] = ((t + 1) * (t + 2) / 2) % 64;
+    const nx = y; y = (2 * x + 3 * y) % 5; x = nx;
+  }
+  for (let x = 0; x < 5; x++) for (let y = 0; y < 5; y++) PI[x + 5 * y] = y + 5 * ((2 * x + 3 * y) % 5);
+
+  const C = new Int32Array(10), B = new Int32Array(50);
+  function keccakF(s) {
+    for (let r = 0; r < 24; r++) {
+      for (let x = 0; x < 5; x++) {
+        const i = 2 * x;
+        C[i] = s[i] ^ s[i + 10] ^ s[i + 20] ^ s[i + 30] ^ s[i + 40];
+        C[i + 1] = s[i + 1] ^ s[i + 11] ^ s[i + 21] ^ s[i + 31] ^ s[i + 41];
+      }
+      for (let x = 0; x < 5; x++) {
+        const a = 2 * X1[x], b = 2 * X4[x];
+        const lo = C[b] ^ ((C[a] << 1) | (C[a + 1] >>> 31));
+        const hi = C[b + 1] ^ ((C[a + 1] << 1) | (C[a] >>> 31));
+        for (let k = 2 * x; k < 50; k += 10) { s[k] ^= lo; s[k + 1] ^= hi; }
+      }
+      for (let i = 0; i < 25; i++) {
+        const lo = s[2 * i], hi = s[2 * i + 1], n = ROT[i], d = 2 * PI[i];
+        if (n === 0) { B[d] = lo; B[d + 1] = hi; }
+        else if (n < 32) { B[d] = (lo << n) | (hi >>> (32 - n)); B[d + 1] = (hi << n) | (lo >>> (32 - n)); }
+        else if (n === 32) { B[d] = hi; B[d + 1] = lo; }
+        else { const m = n - 32; B[d] = (hi << m) | (lo >>> (32 - m)); B[d + 1] = (lo << m) | (hi >>> (32 - m)); }
+      }
+      for (let y = 0; y < 25; y += 5) {
+        for (let x = 0; x < 5; x++) {
+          const k = 2 * (x + y), k1 = 2 * (X1[x] + y), k2 = 2 * (X2[x] + y);
+          s[k] = B[k] ^ (~B[k1] & B[k2]);
+          s[k + 1] = B[k + 1] ^ (~B[k1 + 1] & B[k2 + 1]);
+        }
+      }
+      s[0] ^= RC[2 * r]; s[1] ^= RC[2 * r + 1];
+    }
+  }
+
+  const bswap = (v) => (((v & 0xff) << 24) | ((v & 0xff00) << 8) | ((v >>> 8) & 0xff00) | (v >>> 24)) >>> 0;
+  const toBytes = (hex) => {
+    const h = hex.replace(/^0x/, "");
+    const out = new Uint8Array(h.length / 2);
+    for (let i = 0; i < out.length; i++) out[i] = parseInt(h.substr(2 * i, 2), 16);
+    return out;
+  };
+  // Loads 96 bytes of input plus keccak padding into a fresh state (one 136-byte block).
+  function absorb(input, state) {
+    const block = new Uint8Array(136);
+    block.set(input);
+    block[96] ^= 0x01;
+    block[135] ^= 0x80;
+    state.fill(0);
+    for (let i = 0; i < 34; i++) {
+      const o = 4 * i;
+      state[i] = block[o] | (block[o + 1] << 8) | (block[o + 2] << 16) | (block[o + 3] << 24);
+    }
+  }
+
+  const s = new Int32Array(50), base = new Int32Array(50), T = new Uint32Array(8);
+  const atOrBelowTarget = () => {
+    for (let i = 0; i < 8; i++) {
+      const d = bswap(s[i]);
+      if (d !== T[i]) return d < T[i];
+    }
+    return true;
+  };
+  let generation = 0;
+
+  function start(job) {
+    const mine = ++generation;
+    // Input layout: [challenge 32 bytes][miner address, left-padded to 32][nonce 32 bytes].
+    // The nonce is 28 random bytes followed by a 4-byte counter (bytes 92..95, the high half of lane 11).
+    const input = new Uint8Array(96);
+    input.set(toBytes(job.challenge), 0);
+    input.set(toBytes(job.miner), 44);
+    const prefix = Uint8Array.from(job.prefix);
+    input.set(prefix, 64);
+    absorb(input, base);
+    const target = job.target.replace(/^0x/, "").padStart(64, "0");
+    for (let i = 0; i < 8; i++) T[i] = parseInt(target.substr(8 * i, 8), 16);
+
+    let counter = 0;
+    const batch = () => {
+      if (mine !== generation) return;
+      let n = 0;
+      for (; n < 40000; n++) {
+        s.set(base);
+        s[23] = counter;
+        keccakF(s);
+        if (bswap(s[0]) <= T[0] && atOrBelowTarget()) {
+          const nonce = new Uint8Array(32);
+          nonce.set(prefix, 0);
+          nonce[28] = counter & 0xff; nonce[29] = (counter >>> 8) & 0xff;
+          nonce[30] = (counter >>> 16) & 0xff; nonce[31] = (counter >>> 24) & 0xff;
+          let hex = "0x";
+          for (const b of nonce) hex += b.toString(16).padStart(2, "0");
+          post({ type: "progress", hashes: n + 1 });
+          post({ type: "found", nonce: hex, challenge: job.challenge });
+          generation++;
+          return;
+        }
+        counter = (counter + 1) | 0;
+        if (counter === 0) { crypto.getRandomValues(prefix); input.set(prefix, 64); absorb(input, base); }
+      }
+      post({ type: "progress", hashes: n });
+      setTimeout(batch, 0);
+    };
+    batch();
+  }
+
+  return function handle(msg) {
+    if (msg.type === "start") start(msg);
+    else if (msg.type === "stop") generation++;
+    else if (msg.type === "hash") {
+      absorb(toBytes(msg.input), s);
+      keccakF(s);
+      let hex = "0x";
+      for (let i = 0; i < 8; i++) hex += bswap(s[i]).toString(16).padStart(8, "0");
+      post({ type: "digest", id: msg.id, hex });
+    }
+  };
+}
+
+(() => {
+  const TOKEN = "0xcaf5dfa707bcca0240254c64ab615dce03362c12";
+  const BASE_CHAIN = "0x2105";
+  const PUBLIC_RPC = "https://mainnet.base.org";
+  const EXPLORER = "https://basescan.org";
+  const SEL = {
+    challengeNumber: "0x8ae0368b", miningTarget: "0x8a769d35", rewardCount: "0x79085425",
+    totalMined: "0x5556db65", balanceOf: "0x70a08231", mine: "0x4d474898",
+  };
+  const MINED_TOPIC = "0xe2f2652eedc03361f62b0427f31f0c092b25f3ae073c36bcc2eee5a034e7e40d";
+  const KNOWN_ERRORS = {
+    d9c1988f: "Someone else solved this puzzle first. Moving on to the new one.",
+    "8a7d2016": "Mining has finished. All 1,800,000,000 mineable FIER have been mined.",
+  };
+  const WEI = 10n ** 18n, INITIAL_REWARD = 5000n * WEI, HALVING = 180000n, MINEABLE = 1800000000n * WEI;
+
+  const $ = (id) => document.getElementById(id);
+  const eth = window.ethereum;
+  let account = null, onBase = false, mining = false, claiming = false;
+  let workers = [], useMainThread = false, puzzle = null, latest = null;
+  let hashCount = 0, totalGuesses = 0, rate = 0, lastTick = performance.now();
+
+  const cores = Math.max(1, Math.min(16, navigator.hardwareConcurrency || 2));
+  $("threads").max = String(cores);
+  $("threads").value = String(Math.max(1, cores - 1));
+  $("threads-out").textContent = $("threads").value;
+
+  // ---------- Formatting ----------
+  const fier = (wei, digits = 0) =>
+    (Number(wei / WEI) + Number(wei % WEI) / 1e18).toLocaleString("en-US", { maximumFractionDigits: digits });
+  const compact = (n) => new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+  const duration = (sec) => {
+    if (!isFinite(sec)) return "—";
+    if (sec < 90) return `${Math.max(1, Math.round(sec))} sec`;
+    if (sec < 5400) return `${Math.round(sec / 60)} min`;
+    if (sec < 172800) return `${Math.round(sec / 3600)} hr`;
+    return `${Math.round(sec / 86400)} days`;
+  };
+  const short = (a) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+  const rewardAt = (count) => INITIAL_REWARD >> (count / HALVING);
+  const word = (hex) => BigInt(hex === "0x" ? "0x0" : hex);
+
+  // ---------- Talking to the chain ----------
+  async function rpc(method, params) {
+    if (eth && onBase) return eth.request({ method, params });
+    const res = await fetch(PUBLIC_RPC, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+    });
+    const body = await res.json();
+    if (body.error) throw new Error(body.error.message);
+    return body.result;
+  }
+  const read = (data) => rpc("eth_call", [{ to: TOKEN, data }, "latest"]);
+
+  async function readPuzzle() {
+    const [challenge, target] = await Promise.all([read(SEL.challengeNumber), read(SEL.miningTarget)]);
+    return { challenge: challenge.toLowerCase(), target: word(target) };
+  }
+
+  async function refresh() {
+    try {
+      const [p, count, mined] = await Promise.all([readPuzzle(), read(SEL.rewardCount), read(SEL.totalMined)]);
+      latest = { ...p, rewardCount: word(count), totalMined: word(mined) };
+      $("stats-note").hidden = true;
+      render();
+      if (account) {
+        const bal = await read(SEL.balanceOf + account.slice(2).toLowerCase().padStart(64, "0"));
+        $("balance").textContent = fier(word(bal), 2);
+      }
+    } catch {
+      $("stats-note").hidden = false;
+    }
+  }
+
+  function render() {
+    if (!latest) return;
+    const { rewardCount, totalMined, target } = latest;
+    $("mined").textContent = fier(totalMined);
+    $("mined-bar").style.width = `${Number((totalMined * 10000n) / MINEABLE) / 100}%`;
+    $("rewards").textContent = rewardCount.toLocaleString("en-US");
+    const nextHalving = (rewardCount / HALVING + 1n) * HALVING;
+    $("halving").textContent = `Next halving at reward ${nextHalving.toLocaleString("en-US")}`;
+    $("reward").textContent = `${fier(rewardAt(rewardCount))} FIER`;
+    const expected = Number((1n << 256n) / (target + 1n));
+    $("difficulty").textContent = compact(expected);
+    $("eta").textContent = rate > 0 ? duration(expected / rate) : "—";
+  }
+
+  // ---------- Ledger and status ----------
+  function log(message, { tx, tone } = {}) {
+    const li = document.createElement("li");
+    if (tone) li.dataset.tone = tone;
+    const time = document.createElement("time");
+    time.textContent = new Date().toLocaleTimeString("en-US", { hour12: false });
+    const text = document.createElement("div");
+    text.textContent = message;
+    if (tx) {
+      const a = document.createElement("a");
+      a.href = `${EXPLORER}/tx/${tx}`;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = "View on Basescan";
+      text.append(a);
+    }
+    li.append(time, text);
+    $("log").prepend(li);
+    while ($("log").children.length > 60) $("log").lastChild.remove();
+  }
+  function status(message, tone) {
+    $("status").textContent = message;
+    if (tone) $("status").dataset.tone = tone; else delete $("status").dataset.tone;
+  }
+  function explain(err) {
+    const json = (v) => { try { return JSON.stringify(v); } catch { return ""; } };
+    const text = [json(err), err && err.message, json(err && err.data)].join(" ");
+    for (const [selector, message] of Object.entries(KNOWN_ERRORS)) if (text.includes(selector)) return message;
+    return `Something went wrong: ${(err && (err.shortMessage || err.message)) || err}`;
+  }
+
+  function updatePrimary() {
+    const btn = $("primary");
+    btn.disabled = claiming;
+    btn.dataset.mode = "";
+    btn.hidden = !eth;
+    $("get-metamask").hidden = !!eth;
+    if (!eth) return;
+    if (!account) { btn.textContent = "Connect MetaMask"; return; }
+    if (!onBase) { btn.textContent = "Switch to Base"; return; }
+    btn.textContent = mining ? "Stop mining" : "Start mining";
+    btn.dataset.mode = mining ? "stop" : "";
+  }
+
+  // ---------- Wallet ----------
+  async function checkChain() {
+    onBase = eth ? (await eth.request({ method: "eth_chainId" })).toLowerCase() === BASE_CHAIN : false;
+    return onBase;
+  }
+  async function switchToBase() {
+    try {
+      await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: BASE_CHAIN }] });
+    } catch (err) {
+      if (err && err.code === 4902) {
+        await eth.request({
+          method: "wallet_addEthereumChain",
+          params: [{
+            chainId: BASE_CHAIN, chainName: "Base",
+            nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+            rpcUrls: ["https://mainnet.base.org"], blockExplorerUrls: [EXPLORER],
+          }],
+        });
+      } else throw err;
+    }
+    return checkChain();
+  }
+  async function connect() {
+    const accounts = await eth.request({ method: "eth_requestAccounts" });
+    setAccount(accounts[0]);
+    if (!(await checkChain())) await switchToBase();
+    log(`Wallet connected: ${short(account)}.`);
+    status(onBase ? "Ready. Press Start mining." : "Switch MetaMask to the Base network to mine.", onBase ? null : "warn");
+    await refresh();
+  }
+  function setAccount(a) {
+    account = a ? a.toLowerCase() : null;
+    $("account").textContent = account || "Not connected";
+    $("watch").disabled = !account;
+    if (!account) $("balance").textContent = "—";
+  }
+
+  // ---------- Mining ----------
+  function makeEngine() {
+    if (!useMainThread) {
+      try {
+        const src = `const handle = (${minerEngine.toString()})((m) => postMessage(m)); onmessage = (e) => handle(e.data);`;
+        const w = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
+        w.onmessage = (e) => onEngine(e.data);
+        w.onerror = (e) => { e.preventDefault(); fallBackToMainThread(); };
+        return w;
+      } catch { useMainThread = true; }
+    }
+    const handle = minerEngine((m) => onEngine(m));
+    return { postMessage: (m) => setTimeout(() => handle(m), 0), terminate: () => handle({ type: "stop" }) };
+  }
+  function fallBackToMainThread() {
+    if (useMainThread) return;
+    useMainThread = true;
+    log("This browser blocked background threads, so mining runs on one thread here.", { tone: "warn" });
+    if (mining && !claiming) startEngines();
+  }
+  function startEngines() {
+    stopEngines();
+    const count = useMainThread ? 1 : Number($("threads").value);
+    for (let i = 0; i < count; i++) {
+      const engine = makeEngine();
+      engine.postMessage({
+        type: "start", challenge: puzzle.challenge, miner: account,
+        prefix: Array.from(crypto.getRandomValues(new Uint8Array(28))),
+        target: "0x" + puzzle.target.toString(16).padStart(64, "0"),
+      });
+      workers.push(engine);
+    }
+  }
+  function stopEngines() {
+    for (const w of workers) w.terminate();
+    workers = [];
+  }
+  function onEngine(m) {
+    if (m.type === "progress") { hashCount += m.hashes; totalGuesses += m.hashes; }
+    else if (m.type === "found" && mining && puzzle && m.challenge === puzzle.challenge) claim(m.nonce);
+  }
+
+  async function startMining() {
+    mining = true;
+    updatePrimary();
+    puzzle = await readPuzzle();
+    const count = useMainThread ? 1 : Number($("threads").value);
+    log(`Mining started on ${count} thread${count === 1 ? "" : "s"}.`);
+    status("Mining. Keep this tab open.");
+    startEngines();
+  }
+  function stopMining(message = "Mining stopped.") {
+    mining = false;
+    stopEngines();
+    rate = 0;
+    $("rate").textContent = "0";
+    render();
+    updatePrimary();
+    log(message);
+    status("Press Start mining to continue.");
+  }
+
+  async function claim(nonce) {
+    if (claiming) return;
+    claiming = true;
+    stopEngines();
+    updatePrimary();
+    $("stamp").hidden = false;
+    setTimeout(() => { $("stamp").hidden = true; }, 2600);
+    const tx = { from: account, to: TOKEN, data: SEL.mine + nonce.slice(2) };
+    log("Puzzle solved. Checking the answer before claiming.");
+    try {
+      await eth.request({ method: "eth_call", params: [tx, "latest"] });
+    } catch (err) {
+      log(explain(err), { tone: "warn" });
+      return resume();
+    }
+    status("Approve the claim in MetaMask.");
+    let hash;
+    try {
+      hash = await eth.request({ method: "eth_sendTransaction", params: [tx] });
+    } catch (err) {
+      claiming = false;
+      if (err && err.code === 4001) return stopMining("You cancelled the claim, so mining is paused.");
+      log(explain(err), { tone: "warn" });
+      return resume();
+    }
+    status("Claim sent. Waiting for the network to confirm it.");
+    log("Claim sent.", { tx: hash });
+    const receipt = await waitForReceipt(hash);
+    const event = receipt && receipt.status === "0x1" && receipt.logs.find((l) => l.topics[0] === MINED_TOPIC);
+    if (event) log(`Reward claimed: +${fier(BigInt("0x" + event.data.slice(2, 66)), 2)} FIER.`, { tx: hash, tone: "ok" });
+    else log("The claim did not go through. Someone else probably claimed this puzzle first.", { tx: hash, tone: "warn" });
+    await refresh();
+    resume();
+  }
+  async function resume() {
+    claiming = false;
+    updatePrimary();
+    if (!mining) return;
+    try {
+      puzzle = await readPuzzle();
+      status("Mining. Keep this tab open.");
+      startEngines();
+    } catch (err) {
+      stopMining(explain(err));
+    }
+  }
+  async function waitForReceipt(hash) {
+    for (let i = 0; i < 240; i++) {
+      const receipt = await eth.request({ method: "eth_getTransactionReceipt", params: [hash] });
+      if (receipt) return receipt;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    return null;
+  }
+
+  // Someone else may win the current puzzle; when the challenge changes, switch to the new one.
+  setInterval(async () => {
+    if (!mining || claiming || !puzzle) return;
+    try {
+      const next = await readPuzzle();
+      if (mining && !claiming && (next.challenge !== puzzle.challenge || next.target !== puzzle.target)) {
+        puzzle = next;
+        log("Someone else found a reward. Starting the new puzzle.");
+        startEngines();
+        refresh();
+      }
+    } catch { /* try again next round */ }
+  }, 4000);
+
+  setInterval(() => {
+    const now = performance.now();
+    const instant = hashCount / ((now - lastTick) / 1000);
+    hashCount = 0;
+    lastTick = now;
+    rate = mining && !claiming ? (rate ? rate * 0.6 + instant * 0.4 : instant) : 0;
+    $("rate").textContent = Math.round(rate).toLocaleString("en-US");
+    $("guesses").textContent = totalGuesses < 1e6 ? totalGuesses.toLocaleString("en-US") : compact(totalGuesses);
+    render();
+  }, 1000);
+  setInterval(() => { if (!claiming) refresh(); }, 15000);
+
+  // ---------- Controls ----------
+  $("primary").addEventListener("click", async () => {
+    try {
+      if (!account) await connect();
+      else if (!onBase) { await switchToBase(); await refresh(); }
+      else if (mining) stopMining();
+      else await startMining();
+    } catch (err) {
+      if (mining) stopMining(explain(err));
+      else status(err && err.code === 4001 ? "You cancelled the request in MetaMask." : explain(err), "warn");
+    }
+    updatePrimary();
+  });
+  $("threads").addEventListener("input", () => {
+    $("threads-out").textContent = $("threads").value;
+    if (mining && !claiming) startEngines();
+  });
+  $("watch").addEventListener("click", async () => {
+    try {
+      await eth.request({
+        method: "wallet_watchAsset",
+        params: { type: "ERC20", options: { address: TOKEN, symbol: "FIER", decimals: 18 } },
+      });
+    } catch (err) {
+      status(explain(err), "warn");
+    }
+  });
+
+  if (eth && eth.on) {
+    eth.on("accountsChanged", (accounts) => {
+      if (mining) stopMining("Your wallet account changed, so mining stopped.");
+      setAccount(accounts[0]);
+      updatePrimary();
+      refresh();
+    });
+    eth.on("chainChanged", (chainId) => {
+      onBase = String(chainId).toLowerCase() === BASE_CHAIN;
+      if (mining && !onBase) stopMining("MetaMask left the Base network, so mining stopped.");
+      updatePrimary();
+      refresh();
+    });
+  }
+
+  // ---------- Start-up ----------
+  (async () => {
+    if (!eth) {
+      status("MetaMask was not found. Install it, or on a phone open this page in the MetaMask app's browser.", "warn");
+      log("Ready. Install MetaMask to mine FIER.");
+    } else {
+      log("Ready. Connect MetaMask to start mining.");
+      try {
+        await checkChain();
+        const accounts = await eth.request({ method: "eth_accounts" });
+        if (accounts[0]) {
+          setAccount(accounts[0]);
+          status(onBase ? "Ready. Press Start mining." : "Switch MetaMask to the Base network to mine.", onBase ? null : "warn");
+        }
+      } catch { /* the wallet will ask when the user connects */ }
+    }
+    updatePrimary();
+    refresh();
+  })();
+})();
+</script>
+</body>
+</html>
