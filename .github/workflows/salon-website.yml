@@ -1,6 +1,7 @@
-# Publishes only the salon-website folder to GitHub Pages
-# (nothing else in this repository goes online).
-# Runs every time the salon website changes, or by hand from the Actions tab.
+# Publishes two things to GitHub Pages, and nothing else in this repository:
+#   - the salon-website folder, at the site root
+#   - the FIER browser miner (fier-token/miner/index.html), at /fier-token/miner/
+# Runs every time either of them changes, or by hand from the Actions tab.
 name: Publish salon website
 
 on:
@@ -8,6 +9,7 @@ on:
     branches: [claude/salon-work-website-95l1m7]
     paths:
       - "salon-website/**"
+      - "fier-token/miner/**"
       - ".github/workflows/salon-website.yml"
   workflow_dispatch:
 
@@ -28,9 +30,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Assemble the site
+        run: |
+          mkdir -p _site/fier-token/miner
+          cp -R salon-website/. _site/
+          cp fier-token/miner/index.html _site/fier-token/miner/index.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: salon-website
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
