@@ -15,6 +15,9 @@ FIER is a standard **ERC-20** token, the most common token format in crypto. Wal
 | Source code | Verified, exact match, on [Basescan](https://basescan.org/address/0xcaf5dfa707bcca0240254c64ab615dce03362c12#code), [Sourcify](https://repo.sourcify.dev/8453/0xcaf5Dfa707bCCa0240254c64Ab615DCE03362C12) and [Blockscout](https://base.blockscout.com/address/0xcaf5dfa707bcca0240254c64ab615dce03362c12) |
 | Launch transaction | [0xdc4e…7989](https://basescan.org/tx/0xdc4efc6f36674673b72644c14c3b05f4e4f789139a1aac7591e7f051d0cc7989) |
 | Build settings | Solidity 0.8.28, optimizer off, EVM version cancun |
+| Buy FIER | [Uniswap on Base (USDC → FIER)](https://app.uniswap.org/swap?chain=base&inputCurrency=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913&outputCurrency=0xcaf5dfa707bcca0240254c64ab615dce03362c12) |
+| Trading pool | FIER/USDC on Uniswap v4, 0.9% fee. Opened with 1,000,000 FIER, priced from $1.00 upward ([deposit transaction](https://basescan.org/tx/0x5fac0a152bad3d38dbd8af9c15e095b986b1ae05c9048be2b8a434384e6c9eb5)) |
+| Browser miner | [nest4fier.github.io/gittest/fier-token/miner](https://nest4fier.github.io/gittest/fier-token/miner/) |
 
 To see FIER in MetaMask: switch to Base, choose **Import tokens**, and paste the token address.
 
@@ -116,7 +119,7 @@ Anyone can mine. Each reward claim is a small transaction, so the miner's wallet
 
 It never asks for a private key or recovery phrase.
 
-It's a single file with no build step and no outside code, so it works on any static web host. For example, turn on GitHub Pages for this repository and open `/fier-token/miner/`.
+It's live at **https://nest4fier.github.io/gittest/fier-token/miner/** (served by GitHub Pages). On a phone, open that address in the MetaMask app's built-in browser.
 
 ### From the command line
 

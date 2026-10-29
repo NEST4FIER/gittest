@@ -85,14 +85,14 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid 
 }
 .counter small { font-size: 14px; color: var(--muted); }
 .controls { display: flex; gap: 14px 20px; align-items: center; flex-wrap: wrap; }
-button, a.primary {
+button, a.primary, a.secondary {
   font: 600 16px/1 var(--body); border-radius: 4px; cursor: pointer;
   padding: 14px 22px; border: 2px solid var(--accent); text-decoration: none;
 }
 .primary { background: var(--accent); color: var(--accent-ink); }
 .primary:hover { filter: brightness(1.08); }
 .primary[data-mode="stop"] { background: transparent; color: var(--accent); }
-.secondary { background: transparent; color: var(--accent); padding: 10px 16px; font-size: 14px; }
+button.secondary, a.secondary { background: transparent; color: var(--accent); padding: 10px 16px; font-size: 14px; }
 button:disabled { opacity: 0.55; cursor: not-allowed; }
 .threads { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
 .threads input { accent-color: var(--accent); width: 130px; }
@@ -135,6 +135,7 @@ h2 {
   border-top: 2px solid var(--ink); padding-top: 14px;
 }
 .wallet-row > div { display: grid; gap: 4px; min-width: 0; }
+.wallet-row > .wallet-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .addr { font: 500 14px var(--mono); overflow-wrap: anywhere; }
 
 /* Ledger */
@@ -238,7 +239,10 @@ footer code { font-family: var(--mono); overflow-wrap: anywhere; }
       <div class="wallet-row">
         <div><span class="label">Address</span><span class="addr" id="account">Not connected</span></div>
         <div><span class="label">FIER balance</span><span class="value" id="balance">&mdash;</span></div>
+        <div class="wallet-actions">
         <button id="watch" class="secondary" type="button" disabled>Add FIER to MetaMask</button>
+        <a class="secondary" href="https://app.uniswap.org/swap?chain=base&amp;inputCurrency=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913&amp;outputCurrency=0xcaf5dfa707bcca0240254c64ab615dce03362c12" target="_blank" rel="noopener">Buy FIER on Uniswap</a>
+        </div>
       </div>
     </section>
 
@@ -261,6 +265,7 @@ footer code { font-family: var(--mono); overflow-wrap: anywhere; }
   <footer>
     <span>Contract <code>0xcaf5dfa707bcca0240254c64ab615dce03362c12</code></span>
     <a href="https://basescan.org/token/0xcaf5dfa707bcca0240254c64ab615dce03362c12" target="_blank" rel="noopener">Basescan</a>
+    <a href="https://app.uniswap.org/swap?chain=base&amp;inputCurrency=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913&amp;outputCurrency=0xcaf5dfa707bcca0240254c64ab615dce03362c12" target="_blank" rel="noopener">Buy on Uniswap</a>
     <a href="https://github.com/NEST4FIER/gittest/tree/claude/salon-work-website-95l1m7/fier-token" target="_blank" rel="noopener">Source code</a>
   </footer>
 </div>
