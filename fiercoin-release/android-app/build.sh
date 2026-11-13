@@ -12,7 +12,7 @@ rm -rf "$O"; mkdir -p "$O/gen" "$O/classes" "$O/dex" "$O/lib/arm64-v8a"
 cd "$A"
 "$BT/aapt2" compile --dir res -o "$O/res.zip"
 "$BT/aapt2" link -I "$JAR" --manifest AndroidManifest.xml -A assets --java "$O/gen" -o "$O/unsigned.apk" "$O/res.zip" \
-  --min-sdk-version 26 --target-sdk-version 34 --version-code "$(date -u +%y%j%H%M)" --version-name 0.21.4
+  --min-sdk-version 26 --target-sdk-version 34 --version-code "$(date -u +%y%j%H%M)" --version-name 0.21.4 --replace-version
 javac -source 8 -target 8 -bootclasspath "$JAR" -Xlint:-options -d "$O/classes" $(find src "$O/gen" -name '*.java')
 "$BT/d8" --lib "$JAR" --min-api 26 --release --output "$O/dex" $(find "$O/classes" -name '*.class')
 cp "$NODE_BIN" "$O/lib/arm64-v8a/libfiercoind.so"
