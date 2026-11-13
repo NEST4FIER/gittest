@@ -28,6 +28,9 @@
   .dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:#777; margin-right:6px; }
   .dot.on { background:var(--ok); }
   .hidden { display:none; }
+  .tx { padding:8px 0; border-bottom:1px solid var(--line); }
+  .txtop { display:flex; justify-content:space-between; gap:8px; }
+  .txsub { color:var(--muted); font-size:12px; margin-top:2px; word-break:break-all; }
   .nodes div { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--line); font-family:monospace; font-size:14px; }
   .nodes button { width:auto; padding:6px 10px; font-size:13px; margin:0; }
 </style>
@@ -60,6 +63,13 @@
     <div class="row"><span>Incoming</span><span id="pend">0</span></div>
     <div class="note">Mined coins can be spent after 100 more blocks (about 4 hours).</div>
     <div class="msg" id="walletErr"></div>
+  </div>
+
+  <div class="card">
+    <h2>History</h2>
+    <div id="history"><div class="tx"><span>No sends or receives yet</span></div></div>
+    <div class="note">Newest first. Tap one to copy its transaction ID.</div>
+    <div class="msg" id="histMsg"></div>
   </div>
 
   <div class="card">
@@ -276,7 +286,9 @@ function sendCoins() {
 }
 
 function renderRewards() {
-  const txs = call('listtransactions', ['*', 100], true)
+  const all = call('listtransactions', ['*', 200], true);
+  renderHistory(all);
+  const txs = all
     .filter(t => t.category === 'generate' || t.category === 'immature' || t.category === 'orphan')
     .reverse().slice(0, 20);
   const box = $('rewards'); box.innerHTML = '';
@@ -289,6 +301,33 @@ function renderRewards() {
     else if (t.category === 'immature') { s.textContent = 'Waiting ' + Math.min(t.confirmations, 100) + '/100'; s.style.color = '#ffb74d'; }
     else { s.textContent = 'Lost'; s.style.color = '#e57373'; }
     row.appendChild(a); row.appendChild(s); box.appendChild(row);
+  }
+}
+
+function shortAddr(a) { return a && a.length > 16 ? a.slice(0, 10) + '...' + a.slice(-6) : (a || ''); }
+function renderHistory(all) {
+  const txs = all.filter(t => t.category === 'send' || t.category === 'receive').reverse().slice(0, 30);
+  const box = $('history'); box.innerHTML = '';
+  if (!txs.length) { box.innerHTML = '<div class="tx"><span>No sends or receives yet</span></div>'; return; }
+  for (const t of txs) {
+    const sent = t.category === 'send';
+    const row = document.createElement('div'); row.className = 'tx';
+    const top = document.createElement('div'); top.className = 'txtop';
+    const what = document.createElement('span');
+    what.textContent = (sent ? '\u2191 Sent ' : '\u2193 Received ') + fmt(Math.abs(t.amount)) + ' FIRC';
+    what.style.color = sent ? '#ff8a65' : '#81c784'; what.style.fontWeight = '700';
+    const st = document.createElement('span');
+    st.textContent = t.confirmations > 0 ? 'Confirmed' : (t.confirmations < 0 ? 'Failed' : 'Pending');
+    st.style.color = t.confirmations > 0 ? '#81c784' : '#ffb74d';
+    top.appendChild(what); top.appendChild(st);
+    const sub = document.createElement('div'); sub.className = 'txsub';
+    const when = new Date((t.time || 0) * 1000).toLocaleString();
+    let line = (sent ? 'To ' : 'To your address ') + shortAddr(t.address) + ' \u00b7 ' + when;
+    if (sent && t.fee) line += ' \u00b7 fee ' + fmt(Math.abs(t.fee));
+    sub.textContent = line;
+    row.appendChild(top); row.appendChild(sub);
+    row.onclick = () => { Fier.copy(t.txid); show('histMsg', 'Transaction ID copied: ' + t.txid); };
+    box.appendChild(row);
   }
 }
 
