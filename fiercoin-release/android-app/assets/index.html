@@ -212,7 +212,13 @@ function ensureWallet() {
     }
   }
   let a = localStorage.getItem('addr');
-  if (!a) { a = call('getnewaddress', ['phone', 'bech32'], true); localStorage.setItem('addr', a); }
+  let mine = false;
+  if (a) { try { mine = call('getaddressinfo', [a], true).ismine === true; } catch (e) { mine = false; } }
+  if (!mine) {
+    // Never mine or receive to an address this wallet can't spend from.
+    a = call('getnewaddress', ['phone', 'bech32'], true);
+    localStorage.setItem('addr', a);
+  }
   setAddr(a);
 }
 function setAddr(a) {
@@ -263,6 +269,7 @@ function toggleMining() {
     if (mining) { call('setgenerate', [false]); }
     else {
       const t = parseInt($('threads').value, 10); localStorage.setItem('threads', String(t));
+      ensureWallet(); // re-checks that the mining address belongs to this wallet
       call('setgenerate', [true, t, localStorage.getItem('addr')]);
     }
   } catch (e) { alert(e.message); }
