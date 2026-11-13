@@ -9050,6 +9050,38 @@ index e8026d0..2543f2b 100644
                      CClientUIInterface::ICON_WARNING);
  
              return;
+diff --git a/src/qt/receivecoinsdialog.cpp b/src/qt/receivecoinsdialog.cpp
+index 69bd132..3c50f87 100644
+--- a/src/qt/receivecoinsdialog.cpp
++++ b/src/qt/receivecoinsdialog.cpp
+@@ -29,6 +29,13 @@ ReceiveCoinsDialog::ReceiveCoinsDialog(const PlatformStyle *_platformStyle, QWid
+ {
+     ui->setupUi(this);
+ 
++    // FierCoin: MWEB is not active on this chain, and mixed address formats confuse people,
++    // so the Receive tab only makes firc1... addresses.
++    ui->useBech32->setChecked(true);
++    ui->useBech32->hide();
++    ui->useMWEB->setChecked(false);
++    ui->useMWEB->hide();
++
+     if (!_platformStyle->getImagesOnButtons()) {
+         ui->clearButton->setIcon(QIcon());
+         ui->receiveButton->setIcon(QIcon());
+@@ -95,11 +102,8 @@ void ReceiveCoinsDialog::setModel(WalletModel *_model)
+         // Last 2 columns are set by the columnResizingFixer, when the table geometry is ready.
+         columnResizingFixer = new GUIUtil::TableViewLastColumnResizingFixer(tableView, AMOUNT_MINIMUM_COLUMN_WIDTH, DATE_COLUMN_WIDTH, this);
+ 
+-        if (model->wallet().getDefaultAddressType() == OutputType::BECH32) {
+-            ui->useBech32->setCheckState(Qt::Checked);
+-        } else {
+-            ui->useBech32->setCheckState(Qt::Unchecked);
+-        }
++        // FierCoin: always give out firc1... (bech32) addresses, like the phone app.
++        ui->useBech32->setCheckState(Qt::Checked);
+ 
+         // Set the button to be enabled or disabled based on whether the wallet can give out new addresses.
+         ui->receiveButton->setEnabled(model->wallet().canGetAddresses());
 diff --git a/src/qt/res/bitcoin-qt-res.rc b/src/qt/res/bitcoin-qt-res.rc
 index 9f7d0ea..397c1cd 100644
 --- a/src/qt/res/bitcoin-qt-res.rc
