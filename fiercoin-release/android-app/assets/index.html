@@ -28,6 +28,13 @@
   .dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:#777; margin-right:6px; }
   .dot.on { background:var(--ok); }
   .hidden { display:none; }
+  #scanner { position:fixed; inset:0; background:#000; z-index:10; display:none; flex-direction:column; align-items:center; justify-content:center; padding:16px; }
+  #scanner video { width:100%; max-width:480px; border-radius:14px; border:3px solid var(--fire); }
+  #scanner p { color:#fff; text-align:center; }
+  #scanner button { max-width:480px; }
+  #qrbox { background:#fff; border-radius:12px; padding:10px; width:220px; margin:10px auto 0; }
+  #qrbox img { width:200px; height:200px; display:block; image-rendering:pixelated; }
+  .link { background:none; color:var(--fire); font-weight:600; font-size:15px; padding:8px; margin-top:2px; }
   .tx { padding:8px 0; border-bottom:1px solid var(--line); }
   .txtop { display:flex; justify-content:space-between; gap:8px; }
   .txsub { color:var(--muted); font-size:12px; margin-top:2px; word-break:break-all; }
@@ -91,6 +98,7 @@
 
   <div class="card">
     <h2>Receive</h2>
+    <div id="qrbox"><img id="qrimg" alt="Your address as a QR code"></div>
     <div class="addr" id="addr">...</div>
     <button class="alt" onclick="copyAddr()">Copy address</button>
     <button class="alt" onclick="newAddr()">Make a new address</button>
@@ -99,6 +107,9 @@
 
   <div class="card">
     <h2>Send</h2>
+    <button class="alt" onclick="startScan()">&#128247; Scan QR code</button>
+    <button class="link" onclick="$('qrFile').click()">or scan a picture / screenshot of a QR code</button>
+    <input type="file" id="qrFile" accept="image/*" class="hidden" onchange="scanPicture(this)">
     <input id="sendTo" placeholder="Their FierCoin address (firc1...)" autocomplete="off" autocapitalize="off">
     <input id="sendAmt" placeholder="Amount of FIRC" inputmode="decimal">
     <button onclick="sendCoins()">Send</button>
@@ -125,6 +136,15 @@
   <button class="stop" onclick="stopNode()">Stop FierCoin</button>
 </div>
 
+<div id="scanner">
+  <p>Point the camera at a FierCoin QR code</p>
+  <video id="scanVideo" playsinline muted></video>
+  <canvas id="scanCanvas" class="hidden"></canvas>
+  <button class="stop" onclick="stopScan()">Cancel</button>
+</div>
+
+<script src="jsQR.js"></script>
+<script src="qrcode.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 let spendable = 0;
@@ -193,7 +213,14 @@ function ensureWallet() {
   }
   let a = localStorage.getItem('addr');
   if (!a) { a = call('getnewaddress', ['phone', 'bech32'], true); localStorage.setItem('addr', a); }
+  setAddr(a);
+}
+function setAddr(a) {
   $('addr').textContent = a;
+  try {
+    const q = qrcode(0, 'M'); q.addData('fiercoin:' + a); q.make();
+    $('qrimg').src = q.createDataURL(8, 2);
+  } catch (e) { $('qrbox').style.display = 'none'; }
 }
 
 function refresh() {
@@ -244,7 +271,7 @@ function toggleMining() {
 
 function copyAddr() { Fier.copy($('addr').textContent); show('recvMsg', 'Address copied. Paste it to whoever is sending you FIRC.'); }
 function newAddr() {
-  try { const a = call('getnewaddress', ['phone', 'bech32'], true); localStorage.setItem('addr', a); $('addr').textContent = a; show('recvMsg', 'New address made. Old addresses still work.'); }
+  try { const a = call('getnewaddress', ['phone', 'bech32'], true); localStorage.setItem('addr', a); setAddr(a); show('recvMsg', 'New address made. Old addresses still work.'); }
   catch (e) { show('recvMsg', e.message, false); }
 }
 
@@ -316,6 +343,71 @@ function renderHistory(all) {
     row.onclick = () => { Fier.copy(t.txid); show('histMsg', 'Transaction ID copied: ' + t.txid); };
     box.appendChild(row);
   }
+}
+
+// ---- QR scanning ----
+let scanStream = null, scanTimer = null;
+function handleQr(text) {
+  text = (text || '').trim();
+  let addr = text, amount = '';
+  const m = text.match(/^[a-z]+:(.*)$/i);
+  if (m) addr = m[1];
+  const qi = addr.indexOf('?');
+  if (qi >= 0) {
+    const params = addr.slice(qi + 1).split('&');
+    addr = addr.slice(0, qi);
+    for (const p of params) { const kv = p.split('='); if (kv[0].toLowerCase() === 'amount') amount = decodeURIComponent(kv[1] || ''); }
+  }
+  addr = addr.replace(/^\/\//, '').trim();
+  let valid = false;
+  try { valid = call('validateaddress', [addr]).isvalid; } catch (e) {}
+  if (!valid) { show('sendMsg', 'That QR code is not a FierCoin address: ' + text.slice(0, 60), false); return; }
+  $('sendTo').value = addr;
+  if (amount) $('sendAmt').value = amount;
+  show('sendMsg', amount ? 'Scanned! Address and amount filled in. Check them, then tap Send.' : 'Scanned! Now type the amount and tap Send.');
+}
+function startScan() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    show('sendMsg', 'The camera is not available here. Use "scan a picture" instead.', false); return;
+  }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+    .then(stream => {
+      scanStream = stream;
+      const v = $('scanVideo'); v.srcObject = stream; v.play();
+      $('scanner').style.display = 'flex';
+      scanTimer = setInterval(scanFrame, 250);
+    })
+    .catch(e => show('sendMsg', 'Could not open the camera (' + (e.name || e) + '). Allow camera access for FierCoin in your phone Settings, or use "scan a picture".', false));
+}
+function scanFrame() {
+  const v = $('scanVideo');
+  if (!v.videoWidth) return;
+  const w = Math.min(640, v.videoWidth), h = Math.round(v.videoHeight * w / v.videoWidth);
+  const c = $('scanCanvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d'); ctx.drawImage(v, 0, 0, w, h);
+  const code = jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'attemptBoth' });
+  if (code && code.data) { stopScan(); handleQr(code.data); }
+}
+function stopScan() {
+  if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
+  if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+  $('scanner').style.display = 'none';
+}
+function scanPicture(input) {
+  const f = input.files && input.files[0]; input.value = '';
+  if (!f) return;
+  const img = new Image();
+  img.onload = () => {
+    const scale = Math.min(1, 1200 / Math.max(img.width, img.height));
+    const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+    const c = $('scanCanvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+    const code = jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'attemptBoth' });
+    URL.revokeObjectURL(img.src);
+    if (code && code.data) handleQr(code.data); else show('sendMsg', 'No QR code found in that picture. Try a clearer, closer one.', false);
+  };
+  img.onerror = () => show('sendMsg', 'Could not open that picture.', false);
+  img.src = URL.createObjectURL(f);
 }
 
 function renderNodes() {

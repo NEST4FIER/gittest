@@ -14,7 +14,6 @@ import android.os.PowerManager;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.webkit.JavascriptInterface;
-import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -29,6 +28,7 @@ import java.util.Locale;
 
 public class MainActivity extends Activity {
     private WebView web;
+    private ChromeClient chrome;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,10 +42,28 @@ public class MainActivity extends Activity {
         s.setDomStorageEnabled(true);
         s.setAllowFileAccess(true);
         web.setWebViewClient(new WebViewClient());
-        web.setWebChromeClient(new WebChromeClient()); // enables confirm/prompt/alert dialogs
+        chrome = new ChromeClient(this); // dialogs, camera for QR scanning, picture picker
+        web.setWebChromeClient(chrome);
+        s.setMediaPlaybackRequiresUserGesture(false);
         web.addJavascriptInterface(new Bridge(this), "Fier");
         web.loadUrl("file:///android_asset/index.html");
         setContentView(web);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        if (requestCode == ChromeClient.REQ_CAMERA && chrome != null) {
+            chrome.onCameraPermission(results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == ChromeClient.REQ_PICK_IMAGE && chrome != null) {
+            chrome.onImagePicked(resultCode == RESULT_OK && data != null ? data.getData() : null);
+            return;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
