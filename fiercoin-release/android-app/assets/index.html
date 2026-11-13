@@ -86,7 +86,6 @@
     <label class="note">How hard to work (more = faster, hotter phone)</label>
     <select id="threads"></select>
     <button id="mineBtn" onclick="toggleMining()">Start mining</button>
-    <div class="msg" id="mwarn" style="background:#4a1a12">Not connected to any other computer, so mining is paused. Coins mined while alone are thrown away when you reconnect. It restarts automatically once you're connected.</div>
     <div class="note">Tip: mine while charging. Phones get warm when mining.</div>
   </div>
 
@@ -129,7 +128,7 @@
 <script>
 const $ = id => document.getElementById(id);
 let spendable = 0;
-let ready = false, mining = false, polling = null, peerCount = 0, autoPaused = false;
+let ready = false, mining = false, polling = null, peerCount = 0;
 
 function call(method, params, wallet) {
   const reply = wallet ? Fier.walletRpc(method, JSON.stringify(params || [])) : Fier.rpc(method, JSON.stringify(params || []));
@@ -208,21 +207,13 @@ function refresh() {
     $('status').textContent = peers > 0 ? 'Online' : 'Running alone (not connected)';
     $('dot').classList.add('on');
     peerCount = peers;
-    let g = call('getgenerate');
-    // Safety: never mine while disconnected (those coins would be thrown away on reconnect).
-    if (g.generating && peers === 0) {
-      call('setgenerate', [false]); autoPaused = true; g = call('getgenerate');
-    } else if (autoPaused && !g.generating && peers > 0) {
-      call('setgenerate', [true, parseInt(localStorage.getItem('threads') || '2', 10), localStorage.getItem('addr')]);
-      autoPaused = false; g = call('getgenerate');
-    }
+    const g = call('getgenerate');
     mining = g.generating;
-    $('mstate').textContent = mining ? 'Mining with ' + g.threads + ' core(s)' : (autoPaused ? 'Paused: not connected' : 'Off');
-    $('mwarn').style.display = peers === 0 ? 'block' : 'none';
+    $('mstate').textContent = mining ? 'Mining with ' + g.threads + ' core(s)' : 'Off';
     $('mspeed').textContent = Math.round(g.hashespersec).toLocaleString() + ' H/s';
     $('mfound').textContent = g.blocksfound;
-    $('mineBtn').textContent = (mining || autoPaused) ? 'Stop mining' : 'Start mining';
-    $('mineBtn').className = (mining || autoPaused) ? 'stop' : '';
+    $('mineBtn').textContent = mining ? 'Stop mining' : 'Start mining';
+    $('mineBtn').className = mining ? 'stop' : '';
   } catch (e) { $('status').textContent = e.message || 'Working...'; }
   try {
     const b = call('getbalances', [], true).mine;
@@ -242,12 +233,8 @@ function refresh() {
 
 function toggleMining() {
   try {
-    if (mining || autoPaused) { autoPaused = false; call('setgenerate', [false]); }
+    if (mining) { call('setgenerate', [false]); }
     else {
-      if (peerCount === 0) {
-        show('mwarn', 'You are not connected to any other computer. Connect first (see "Connect to your laptop or friends" below). Coins mined while alone are thrown away when you reconnect.', false);
-        return;
-      }
       const t = parseInt($('threads').value, 10); localStorage.setItem('threads', String(t));
       call('setgenerate', [true, t, localStorage.getItem('addr')]);
     }
