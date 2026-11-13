@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>FierCoin</title>
+<style>
+  :root { --bg:#16110f; --card:#231a16; --line:#3a2b24; --text:#fff4ea; --muted:#c9b3a3; --fire:#ff8f00; --red:#d84315; --ok:#4caf50; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.4 system-ui, sans-serif; padding:16px 16px 40px; }
+  header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  header img { width:48px; height:48px; }
+  header h1 { font-size:22px; margin:0; }
+  header small { color:var(--muted); display:block; font-size:13px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; }
+  .card h2 { font-size:16px; margin:0 0 10px; color:var(--fire); }
+  .row { display:flex; justify-content:space-between; gap:8px; padding:4px 0; }
+  .row span:first-child { color:var(--muted); }
+  .big { font-size:28px; font-weight:700; }
+  button { width:100%; border:0; border-radius:12px; padding:14px; font-size:17px; font-weight:700; color:#fff; background:linear-gradient(180deg,var(--fire),var(--red)); margin-top:8px; }
+  button.alt { background:#3a2b24; }
+  button.stop { background:#5d1f12; }
+  button:disabled { opacity:.5; }
+  input, select { width:100%; padding:12px; border-radius:10px; border:1px solid var(--line); background:#120d0b; color:var(--text); font-size:16px; margin-top:6px; }
+  .addr { word-break:break-all; font-family:monospace; font-size:14px; background:#120d0b; padding:10px; border-radius:10px; margin-top:6px; }
+  .note { color:var(--muted); font-size:13px; margin-top:8px; }
+  .msg { padding:10px; border-radius:10px; background:#2e2119; margin-top:8px; display:none; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:#777; margin-right:6px; }
+  .dot.on { background:var(--ok); }
+  .hidden { display:none; }
+  .nodes div { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--line); font-family:monospace; font-size:14px; }
+  .nodes button { width:auto; padding:6px 10px; font-size:13px; margin:0; }
+</style>
+</head>
+<body>
+<header>
+  <img src="logo.png" alt="">
+  <div><h1>FierCoin</h1><small>FIRC: mine and keep coins on your phone</small></div>
+</header>
+
+<div class="card" id="startCard">
+  <h2>Welcome</h2>
+  <div>Press start to run FierCoin on this phone. The first start takes up to a minute.</div>
+  <button id="startBtn" onclick="startNode()">Start FierCoin</button>
+  <div class="msg" id="startMsg"></div>
+</div>
+
+<div id="app" class="hidden">
+  <div class="card">
+    <h2><span class="dot" id="dot"></span>Network</h2>
+    <div class="row"><span>Status</span><span id="status">Starting...</span></div>
+    <div class="row"><span>Blocks</span><span id="blocks">-</span></div>
+    <div class="row"><span>Connected to</span><span id="peers">-</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Balance</h2>
+    <div class="big" id="bal">0 FIRC</div>
+    <div class="row"><span>Being confirmed (mined)</span><span id="imm">0</span></div>
+    <div class="row"><span>Incoming</span><span id="pend">0</span></div>
+    <div class="note">Mined coins can be spent after 100 more blocks (about 4 hours).</div>
+  </div>
+
+  <div class="card">
+    <h2>Mining</h2>
+    <div class="row"><span>Miner</span><span id="mstate">Off</span></div>
+    <div class="row"><span>Speed</span><span id="mspeed">0 H/s</span></div>
+    <div class="row"><span>Blocks found</span><span id="mfound">0</span></div>
+    <label class="note">How hard to work (more = faster, hotter phone)</label>
+    <select id="threads"></select>
+    <button id="mineBtn" onclick="toggleMining()">Start mining</button>
+    <div class="note">Tip: mine while charging. Phones get warm when mining.</div>
+  </div>
+
+  <div class="card">
+    <h2>Receive</h2>
+    <div class="addr" id="addr">...</div>
+    <button class="alt" onclick="copyAddr()">Copy address</button>
+    <button class="alt" onclick="newAddr()">Make a new address</button>
+    <div class="msg" id="recvMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Send</h2>
+    <input id="sendTo" placeholder="Their FierCoin address (firc1...)" autocomplete="off" autocapitalize="off">
+    <input id="sendAmt" placeholder="Amount of FIRC" inputmode="decimal">
+    <button onclick="sendCoins()">Send</button>
+    <div class="msg" id="sendMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Connect to your laptop or friends</h2>
+    <div class="note">Type the IP address of a computer running FierCoin (for your laptop at home, something like 192.168.1.20). This keeps everyone on the same blockchain.</div>
+    <input id="nodeIp" placeholder="IP address, e.g. 192.168.1.20" autocomplete="off" autocapitalize="off">
+    <button class="alt" onclick="addNode()">Connect</button>
+    <div class="nodes" id="nodes"></div>
+  </div>
+
+  <div class="card">
+    <h2>Keep your coins safe</h2>
+    <button class="alt" onclick="encryptWallet()">Set a wallet password</button>
+    <button class="alt" onclick="backup()">Back up wallet to Downloads</button>
+    <button class="alt" onclick="Fier.batterySettings()">Let FierCoin run in the background</button>
+    <div class="msg" id="safeMsg"></div>
+    <div class="note">If you lose your phone and have no backup, your coins are gone. Nobody can recover them.</div>
+  </div>
+
+  <button class="stop" onclick="stopNode()">Stop FierCoin</button>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let ready = false, mining = false, polling = null;
+
+function call(method, params, wallet) {
+  const reply = wallet ? Fier.walletRpc(method, JSON.stringify(params || [])) : Fier.rpc(method, JSON.stringify(params || []));
+  let j;
+  try { j = JSON.parse(reply); } catch (e) { throw { code: -1, message: 'Bad reply from node' }; }
+  if (j.error) throw j.error;
+  return j.result;
+}
+function show(id, text, ok) {
+  const el = $(id); el.style.display = 'block'; el.textContent = text;
+  el.style.background = ok === false ? '#4a1a12' : '#2e2119';
+}
+function fmt(n) { return (Math.round(n * 1e8) / 1e8).toLocaleString(undefined, { maximumFractionDigits: 8 }); }
+
+function setupThreads() {
+  const cpus = Math.max(1, Fier.cpuCount());
+  const opts = [[1, 'Light (1 core)'], [2, 'Normal (2 cores)'], [Math.max(2, Math.floor(cpus / 2)), 'Strong (' + Math.max(2, Math.floor(cpus / 2)) + ' cores)'], [cpus, 'Max (' + cpus + ' cores)']];
+  const seen = new Set();
+  for (const [n, label] of opts) {
+    if (seen.has(n)) continue; seen.add(n);
+    const o = document.createElement('option'); o.value = n; o.textContent = label; $('threads').appendChild(o);
+  }
+  $('threads').value = localStorage.getItem('threads') || '2';
+}
+
+function startNode() {
+  $('startBtn').disabled = true;
+  show('startMsg', 'Starting FierCoin...');
+  Fier.start();
+  waitForNode(0);
+}
+function waitForNode(tries) {
+  const err = Fier.lastError();
+  if (err) { show('startMsg', err, false); $('startBtn').disabled = false; return; }
+  try {
+    call('getblockchaininfo');
+    ensureWallet();
+    $('startCard').classList.add('hidden'); $('app').classList.remove('hidden');
+    ready = true; refresh();
+    if (!polling) polling = setInterval(refresh, 4000);
+  } catch (e) {
+    if (tries > 90) { show('startMsg', 'FierCoin did not start: ' + (e.message || e), false); $('startBtn').disabled = false; return; }
+    show('startMsg', 'Starting FierCoin... ' + (e.code === -28 ? e.message : '') );
+    setTimeout(() => waitForNode(tries + 1), 1000);
+  }
+}
+function ensureWallet() {
+  const list = call('listwallets');
+  if (list.indexOf('phone') < 0) {
+    try { call('loadwallet', ['phone']); }
+    catch (e) { call('createwallet', ['phone', false, false, '', false, true, true]); }
+  }
+  let a = localStorage.getItem('addr');
+  if (!a) { a = call('getnewaddress', ['phone', 'bech32'], true); localStorage.setItem('addr', a); }
+  $('addr').textContent = a;
+}
+
+function refresh() {
+  if (!ready) return;
+  if (!Fier.running()) { $('status').textContent = 'Stopped'; $('dot').classList.remove('on'); return; }
+  try {
+    const bc = call('getblockchaininfo');
+    const peers = call('getconnectioncount');
+    $('blocks').textContent = bc.blocks.toLocaleString();
+    $('peers').textContent = peers + (peers === 1 ? ' computer' : ' computers');
+    $('status').textContent = peers > 0 ? 'Online' : 'Running alone (not connected)';
+    $('dot').classList.add('on');
+    const g = call('getgenerate');
+    mining = g.generating;
+    $('mstate').textContent = mining ? 'Mining with ' + g.threads + ' core(s)' : 'Off';
+    $('mspeed').textContent = Math.round(g.hashespersec).toLocaleString() + ' H/s';
+    $('mfound').textContent = g.blocksfound;
+    $('mineBtn').textContent = mining ? 'Stop mining' : 'Start mining';
+    $('mineBtn').className = mining ? 'stop' : '';
+    const b = call('getbalances', [], true).mine;
+    $('bal').textContent = fmt(b.trusted) + ' FIRC';
+    $('imm').textContent = fmt(b.immature);
+    $('pend').textContent = fmt(b.untrusted_pending);
+  } catch (e) { $('status').textContent = e.message || 'Working...'; }
+  renderNodes();
+}
+
+function toggleMining() {
+  try {
+    if (mining) { call('setgenerate', [false]); }
+    else {
+      const t = parseInt($('threads').value, 10); localStorage.setItem('threads', String(t));
+      call('setgenerate', [true, t, localStorage.getItem('addr')]);
+    }
+  } catch (e) { alert(e.message); }
+  refresh();
+}
+
+function copyAddr() { Fier.copy($('addr').textContent); show('recvMsg', 'Address copied. Paste it to whoever is sending you FIRC.'); }
+function newAddr() {
+  try { const a = call('getnewaddress', ['phone', 'bech32'], true); localStorage.setItem('addr', a); $('addr').textContent = a; show('recvMsg', 'New address made. Old addresses still work.'); }
+  catch (e) { show('recvMsg', e.message, false); }
+}
+
+function unlockIfNeeded() {
+  const info = call('getwalletinfo', [], true);
+  if (info.unlocked_until === undefined || info.unlocked_until > 0) return true;
+  const pass = prompt('Enter your wallet password');
+  if (!pass) return false;
+  call('walletpassphrase', [pass, 60], true);
+  return true;
+}
+function sendCoins() {
+  const to = $('sendTo').value.trim(), amt = parseFloat($('sendAmt').value);
+  if (!to || !(amt > 0)) { show('sendMsg', 'Enter an address and an amount.', false); return; }
+  if (!confirm('Send ' + amt + ' FIRC to\n' + to + '?\n\nThis cannot be undone.')) return;
+  try {
+    if (!unlockIfNeeded()) return;
+    const txid = call('sendtoaddress', [to, amt], true);
+    show('sendMsg', 'Sent! Transaction: ' + txid);
+    $('sendTo').value = ''; $('sendAmt').value = '';
+  } catch (e) { show('sendMsg', 'Not sent: ' + e.message, false); }
+}
+
+function renderNodes() {
+  const list = Fier.nodes().split(',').filter(Boolean);
+  $('nodes').innerHTML = '';
+  for (const n of list) {
+    const row = document.createElement('div');
+    const label = document.createElement('span'); label.textContent = n;
+    const btn = document.createElement('button'); btn.className = 'alt'; btn.textContent = 'Remove';
+    btn.onclick = () => { Fier.removeNode(n); renderNodes(); };
+    row.appendChild(label); row.appendChild(btn); $('nodes').appendChild(row);
+  }
+}
+function addNode() {
+  const ip = $('nodeIp').value.trim();
+  if (!ip) return;
+  Fier.addNode(ip); $('nodeIp').value = ''; renderNodes();
+}
+
+function encryptWallet() {
+  const info = call('getwalletinfo', [], true);
+  if (info.unlocked_until !== undefined) { show('safeMsg', 'Your wallet already has a password.'); return; }
+  const p1 = prompt('Choose a wallet password. WRITE IT DOWN: if you forget it, your coins are lost.');
+  if (!p1) return;
+  const p2 = prompt('Type the password again');
+  if (p1 !== p2) { show('safeMsg', 'Passwords did not match. Nothing changed.', false); return; }
+  try { call('encryptwallet', [p1], true); show('safeMsg', 'Password set. You will need it to send coins. Now make a new backup.'); }
+  catch (e) { show('safeMsg', e.message, false); }
+}
+function backup() { show('safeMsg', Fier.backup()); }
+
+function stopNode() {
+  if (!confirm('Stop FierCoin? Mining will stop too.')) return;
+  ready = false; Fier.stop();
+  $('app').classList.add('hidden'); $('startCard').classList.remove('hidden');
+  $('startBtn').disabled = false; show('startMsg', 'FierCoin stopped.');
+}
+
+setupThreads();
+if (Fier.running()) { $('startBtn').disabled = true; waitForNode(0); }
+</script>
+</body>
+</html>
