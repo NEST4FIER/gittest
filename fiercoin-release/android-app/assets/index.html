@@ -59,6 +59,13 @@
     <div class="row"><span>Being confirmed (mined)</span><span id="imm">0</span></div>
     <div class="row"><span>Incoming</span><span id="pend">0</span></div>
     <div class="note">Mined coins can be spent after 100 more blocks (about 4 hours).</div>
+    <div class="msg" id="walletErr"></div>
+  </div>
+
+  <div class="card">
+    <h2>Mining rewards</h2>
+    <div class="nodes" id="rewards"><div><span>No rewards yet</span></div></div>
+    <div class="note">"Lost" means another computer found that block at the same time and its block won. That's normal; those coins were never real.</div>
   </div>
 
   <div class="card">
@@ -111,6 +118,7 @@
 
 <script>
 const $ = id => document.getElementById(id);
+let spendable = 0;
 let ready = false, mining = false, polling = null, peerCount = 0, autoPaused = false;
 
 function call(method, params, wallet) {
@@ -161,8 +169,18 @@ function waitForNode(tries) {
 function ensureWallet() {
   const list = call('listwallets');
   if (list.indexOf('phone') < 0) {
-    try { call('loadwallet', ['phone']); }
-    catch (e) { call('createwallet', ['phone', false, false, '', false, false, true]); }
+    try { call('loadwallet', ['phone', true]); }
+    catch (e) {
+      const m = (e.message || '').toLowerCase();
+      if (m.indexOf('already loaded') >= 0) { /* fine */ }
+      else if (m.indexOf('not found') >= 0 || m.indexOf('does not exist') >= 0 || e.code === -18) {
+        try { call('createwallet', ['phone', false, false, '', false, false, true]); }
+        catch (e2) {
+          if ((e2.message || '').toLowerCase().indexOf('already exists') >= 0) call('loadwallet', ['phone', true]);
+          else throw e2;
+        }
+      } else throw e;
+    }
   }
   let a = localStorage.getItem('addr');
   if (!a) { a = call('getnewaddress', ['phone', 'bech32'], true); localStorage.setItem('addr', a); }
@@ -195,11 +213,20 @@ function refresh() {
     $('mfound').textContent = g.blocksfound;
     $('mineBtn').textContent = (mining || autoPaused) ? 'Stop mining' : 'Start mining';
     $('mineBtn').className = (mining || autoPaused) ? 'stop' : '';
+  } catch (e) { $('status').textContent = e.message || 'Working...'; }
+  try {
     const b = call('getbalances', [], true).mine;
+    spendable = b.trusted;
     $('bal').textContent = fmt(b.trusted) + ' FIRC';
     $('imm').textContent = fmt(b.immature);
     $('pend').textContent = fmt(b.untrusted_pending);
-  } catch (e) { $('status').textContent = e.message || 'Working...'; }
+    $('walletErr').style.display = 'none';
+    renderRewards();
+  } catch (e) {
+    $('bal').textContent = '?';
+    show('walletErr', 'Wallet not loaded: ' + (e.message || e) + '. Trying again...', false);
+    try { ensureWallet(); } catch (e2) {}
+  }
   renderNodes();
 }
 
@@ -235,6 +262,10 @@ function unlockIfNeeded() {
 function sendCoins() {
   const to = $('sendTo').value.trim(), amt = parseFloat($('sendAmt').value);
   if (!to || !(amt > 0)) { show('sendMsg', 'Enter an address and an amount.', false); return; }
+  if (amt > spendable) {
+    show('sendMsg', 'You can send up to ' + fmt(spendable) + ' FIRC right now. Freshly mined coins must wait 100 blocks (see Mining rewards) before they can be sent.', false);
+    return;
+  }
   if (!confirm('Send ' + amt + ' FIRC to\n' + to + '?\n\nThis cannot be undone.')) return;
   try {
     if (!unlockIfNeeded()) return;
@@ -242,6 +273,23 @@ function sendCoins() {
     show('sendMsg', 'Sent! Transaction: ' + txid);
     $('sendTo').value = ''; $('sendAmt').value = '';
   } catch (e) { show('sendMsg', 'Not sent: ' + e.message, false); }
+}
+
+function renderRewards() {
+  const txs = call('listtransactions', ['*', 100], true)
+    .filter(t => t.category === 'generate' || t.category === 'immature' || t.category === 'orphan')
+    .reverse().slice(0, 20);
+  const box = $('rewards'); box.innerHTML = '';
+  if (!txs.length) { box.innerHTML = '<div><span>No rewards yet</span></div>'; return; }
+  for (const t of txs) {
+    const row = document.createElement('div');
+    const a = document.createElement('span'); a.textContent = '+' + fmt(t.amount) + ' FIRC';
+    const s = document.createElement('span');
+    if (t.category === 'generate') { s.textContent = 'Ready to spend'; s.style.color = '#4caf50'; }
+    else if (t.category === 'immature') { s.textContent = 'Waiting ' + Math.min(t.confirmations, 100) + '/100'; s.style.color = '#ffb74d'; }
+    else { s.textContent = 'Lost'; s.style.color = '#e57373'; }
+    row.appendChild(a); row.appendChild(s); box.appendChild(row);
+  }
 }
 
 function renderNodes() {

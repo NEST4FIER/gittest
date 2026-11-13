@@ -14,6 +14,7 @@ import android.os.PowerManager;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.webkit.JavascriptInterface;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -41,6 +42,7 @@ public class MainActivity extends Activity {
         s.setDomStorageEnabled(true);
         s.setAllowFileAccess(true);
         web.setWebViewClient(new WebViewClient());
+        web.setWebChromeClient(new WebChromeClient()); // enables confirm/prompt/alert dialogs
         web.addJavascriptInterface(new Bridge(this), "Fier");
         web.loadUrl("file:///android_asset/index.html");
         setContentView(web);
