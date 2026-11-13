@@ -85,6 +85,7 @@ public class NodeService extends Service {
         cmd.add("-maxconnections=16");
         cmd.add("-printtoconsole=0");
         cmd.add("-fallbackfee=0.0001");
+        cmd.add("-txindex=1"); // lets the in-app explorer look up any transaction
         for (String node : Node.nodes(this)) cmd.add("-addnode=" + node);
         try {
             ProcessBuilder pb = new ProcessBuilder(cmd);

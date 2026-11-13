@@ -28,6 +28,9 @@
   .dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:#777; margin-right:6px; }
   .dot.on { background:var(--ok); }
   .hidden { display:none; }
+  #explorer { position:fixed; inset:0; background:var(--bg); z-index:9; display:none; overflow-y:auto; padding:16px 16px 40px; }
+  .mono { font-family:monospace; font-size:13px; word-break:break-all; }
+  .click { cursor:pointer; }
   #scanner { position:fixed; inset:0; background:#000; z-index:10; display:none; flex-direction:column; align-items:center; justify-content:center; padding:16px; }
   #scanner video { width:100%; max-width:480px; border-radius:14px; border:3px solid var(--fire); }
   #scanner p { color:#fff; text-align:center; }
@@ -77,8 +80,14 @@
   <div class="card">
     <h2>History</h2>
     <div id="history"><div class="tx"><span>No sends or receives yet</span></div></div>
-    <div class="note">Newest first. Tap one to copy its transaction ID.</div>
+    <div class="note">Newest first. Tap one to see it in the explorer.</div>
     <div class="msg" id="histMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Explorer</h2>
+    <div class="note">See every block and transaction on the FierCoin blockchain.</div>
+    <button class="alt" onclick="openExplorer()">Open explorer</button>
   </div>
 
   <div class="card">
@@ -138,6 +147,19 @@
   </div>
 
   <button class="stop" onclick="stopNode()">Stop FierCoin</button>
+</div>
+
+<div id="explorer">
+  <header style="justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:12px"><img src="logo.png" alt=""><div><h1>Explorer</h1><small>FierCoin blockchain</small></div></div>
+  </header>
+  <button class="alt" onclick="closeExplorer()" style="margin-top:0">&larr; Back to wallet</button>
+  <div class="card" style="margin-top:12px">
+    <input id="exSearch" placeholder="Block number, block hash, or transaction ID" autocomplete="off" autocapitalize="off">
+    <button onclick="exSearch()">Search</button>
+    <div class="msg" id="exMsg"></div>
+  </div>
+  <div id="exBody"></div>
 </div>
 
 <div id="scanner">
@@ -355,9 +377,95 @@ function renderHistory(all) {
     if (sent && t.fee) line += ' \u00b7 fee ' + fmt(Math.abs(t.fee));
     sub.textContent = line;
     row.appendChild(top); row.appendChild(sub);
-    row.onclick = () => { Fier.copy(t.txid); show('histMsg', 'Transaction ID copied: ' + t.txid); };
+    row.onclick = () => { $('explorer').style.display = 'block'; exTx(t.txid); };
     box.appendChild(row);
   }
+}
+
+// ---- Explorer ----
+function exAddr(spk) {
+  if (!spk) return '?';
+  if (spk.address) return spk.address;
+  if (spk.addresses && spk.addresses.length) return spk.addresses[0];
+  return spk.type === 'nulldata' ? '(data)' : (spk.type || '?');
+}
+function ago(t) {
+  const s = Math.max(0, Math.floor(Date.now() / 1000 - t));
+  if (s < 60) return s + 's ago'; if (s < 3600) return Math.floor(s / 60) + ' min ago';
+  if (s < 86400) return Math.floor(s / 3600) + ' h ago'; return Math.floor(s / 86400) + ' days ago';
+}
+function esc(t) { return String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+function exCard(title, html) { return '<div class="card"><h2>' + esc(title) + '</h2>' + html + '</div>'; }
+function exRow(k, v, mono) { return '<div class="row"><span>' + esc(k) + '</span><span class="' + (mono ? 'mono' : '') + '" style="text-align:right">' + v + '</span></div>'; }
+function openExplorer() { $('explorer').style.display = 'block'; exHome(); }
+function closeExplorer() { $('explorer').style.display = 'none'; }
+function exHome() {
+  try {
+    const tip = call('getblockcount');
+    let html = '<div class="nodes">';
+    for (let h = tip; h >= Math.max(0, tip - 19); h--) {
+      const b = call('getblock', [call('getblockhash', [h]), 2]);
+      const miner = b.tx && b.tx[0] ? exAddr(b.tx[0].vout[0] && b.tx[0].vout[0].scriptPubKey) : '';
+      html += '<div class="click" onclick="exBlock(' + h + ')"><span>#' + h + ' &middot; ' + b.nTx + ' tx<br><small class="mono" style="color:var(--muted)">' + esc(shortAddr(miner)) + '</small></span><span style="color:var(--muted)">' + ago(b.time) + '</span></div>';
+    }
+    html += '</div>';
+    $('exBody').innerHTML = exCard('Latest blocks (tap one)', html);
+  } catch (e) { $('exBody').innerHTML = exCard('Explorer', esc(e.message || e)); }
+}
+function exBlock(hOrHash) {
+  try {
+    const hash = typeof hOrHash === 'number' ? call('getblockhash', [hOrHash]) : hOrHash;
+    const b = call('getblock', [hash, 2]);
+    let html = exRow('Height', '#' + b.height) + exRow('Time', new Date(b.time * 1000).toLocaleString()) +
+      exRow('Transactions', b.nTx) + exRow('Difficulty', b.difficulty.toPrecision(4)) + exRow('Confirmations', b.confirmations) +
+      exRow('Hash', esc(b.hash), true);
+    let txs = '<div class="nodes">';
+    for (const t of b.tx) {
+      const total = t.vout.reduce((a, o) => a + o.value, 0);
+      const coinbase = t.vin[0] && t.vin[0].coinbase !== undefined;
+      txs += '<div class="click" onclick="exTx(\'' + t.txid + '\',\'' + b.hash + '\')"><span class="mono">' + t.txid.slice(0, 16) + '&hellip;<br><small style="color:var(--muted)">' + (coinbase ? 'Mining reward' : 'Transfer') + '</small></span><span>' + fmt(total) + ' FIRC</span></div>';
+    }
+    txs += '</div>';
+    let nav = '<div style="display:flex;gap:8px">';
+    if (b.height > 0) nav += '<button class="alt" onclick="exBlock(' + (b.height - 1) + ')">&larr; Older</button>';
+    if (b.nextblockhash) nav += '<button class="alt" onclick="exBlock(' + (b.height + 1) + ')">Newer &rarr;</button>';
+    nav += '</div><button class="alt" onclick="exHome()">Latest blocks</button>';
+    $('exBody').innerHTML = exCard('Block #' + b.height, html) + exCard('Transactions (tap one)', txs) + nav;
+    $('explorer').scrollTop = 0;
+  } catch (e) { show('exMsg', 'Block not found: ' + (e.message || e), false); }
+}
+function exTx(txid, blockhash) {
+  try {
+    const t = blockhash ? call('getrawtransaction', [txid, true, blockhash]) : call('getrawtransaction', [txid, true]);
+    let html = exRow('Status', t.confirmations ? 'Confirmed (' + t.confirmations + ')' : 'Waiting for a block') +
+      (t.blocktime ? exRow('Time', new Date(t.blocktime * 1000).toLocaleString()) : '') +
+      exRow('Transaction ID', esc(t.txid), true);
+    if (t.blockhash) html += '<button class="alt" onclick="exBlock(\'' + t.blockhash + '\')">Open its block</button>';
+    let from = '<div class="nodes">';
+    for (const i of t.vin) {
+      if (i.coinbase !== undefined) { from += '<div><span>New coins (mining reward)</span><span></span></div>'; continue; }
+      let who = i.txid.slice(0, 12) + '&hellip;:' + i.vout, amt = '';
+      try { const p = call('getrawtransaction', [i.txid, true]).vout[i.vout]; who = esc(shortAddr(exAddr(p.scriptPubKey))); amt = fmt(p.value) + ' FIRC'; } catch (e) {}
+      from += '<div class="click" onclick="exTx(\'' + i.txid + '\')"><span class="mono">' + who + '</span><span>' + amt + '</span></div>';
+    }
+    from += '</div>';
+    let to = '<div class="nodes">';
+    for (const o of t.vout) to += '<div><span class="mono">' + esc(shortAddr(exAddr(o.scriptPubKey))) + '</span><span>' + fmt(o.value) + ' FIRC</span></div>';
+    to += '</div>';
+    $('exBody').innerHTML = exCard('Transaction', html) + exCard('From', from) + exCard('To', to) + '<button class="alt" onclick="exHome()">Latest blocks</button>';
+    $('explorer').scrollTop = 0;
+  } catch (e) { show('exMsg', 'Transaction not found yet. If it is new, wait a minute (the explorer is still indexing). ' + (e.message || ''), false); }
+}
+function exSearch() {
+  const q = $('exSearch').value.trim();
+  $('exMsg').style.display = 'none';
+  if (!q) return;
+  if (/^\d+$/.test(q)) return exBlock(parseInt(q, 10));
+  if (/^[0-9a-fA-F]{64}$/.test(q)) {
+    try { call('getblockheader', [q]); return exBlock(q); } catch (e) {}
+    return exTx(q);
+  }
+  show('exMsg', 'Type a block number (like 12), or paste a 64-character block hash or transaction ID.', false);
 }
 
 // ---- QR scanning ----
