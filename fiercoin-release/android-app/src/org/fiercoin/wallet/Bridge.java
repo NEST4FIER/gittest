@@ -50,7 +50,42 @@ Bridge(MainActivity a) {
 
     @JavascriptInterface
     public String walletRpc(String method, String params) {
-        return Node.rpc(a, "/wallet/" + Node.WALLET, method, params);
+        return Node.rpc(a, "/wallet/" + Node.wallet(a), method, params);
+    }
+
+    @JavascriptInterface
+    public String activeWallet() {
+        return Node.wallet(a);
+    }
+
+    @JavascriptInterface
+    public void setActiveWallet(String name) {
+        if (name.matches("[A-Za-z0-9._-]{1,64}")) Node.setWallet(a, name);
+    }
+
+    /**
+     * Copies a wallet backup file (sent from the page as base64) into its own wallet folder
+     * so the node can load it. Returns the new wallet's name, or "ERROR: ..." on failure.
+     */
+    @JavascriptInterface
+    public String restoreWallet(String base64) {
+        try {
+            byte[] data = android.util.Base64.decode(base64, android.util.Base64.DEFAULT);
+            if (data.length < 4096) return "ERROR: That file is too small to be a FierCoin wallet backup.";
+            // Berkeley DB btree files carry the magic number 0x00053162 at offset 12.
+            boolean le = (data[12] & 0xff) == 0x62 && (data[13] & 0xff) == 0x31 && (data[14] & 0xff) == 0x05 && data[15] == 0;
+            boolean be = data[12] == 0 && (data[13] & 0xff) == 0x05 && (data[14] & 0xff) == 0x31 && (data[15] & 0xff) == 0x62;
+            if (!le && !be) return "ERROR: That file is not a FierCoin wallet backup.";
+            String name = "restored-" + new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(new Date());
+            File dir = new File(new File(Node.dataDir(a), "wallets"), name);
+            if (!dir.mkdirs()) return "ERROR: Could not make a folder for the restored wallet.";
+            try (OutputStream out = new java.io.FileOutputStream(new File(dir, "wallet.dat"))) {
+                out.write(data);
+            }
+            return name;
+        } catch (Exception e) {
+            return "ERROR: " + e.getMessage();
+        }
     }
 
     @JavascriptInterface

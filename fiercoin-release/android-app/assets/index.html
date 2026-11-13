@@ -65,6 +65,8 @@
 
   <div class="card">
     <h2>Balance</h2>
+    <div class="row"><span>Wallet</span><span></span></div>
+    <select id="walletPick" onchange="switchWallet(this.value)"></select>
     <div class="big" id="bal">0 FIRC</div>
     <div class="row"><span>Being confirmed (mined)</span><span id="imm">0</span></div>
     <div class="row"><span>Incoming</span><span id="pend">0</span></div>
@@ -128,6 +130,8 @@
     <h2>Keep your coins safe</h2>
     <button class="alt" onclick="encryptWallet()">Set a wallet password</button>
     <button class="alt" onclick="backup()">Back up wallet to Downloads</button>
+    <button class="alt" onclick="$('restoreFile').click()">Restore from a backup file</button>
+    <input type="file" id="restoreFile" accept="*/*" class="hidden" onchange="restoreBackup(this)">
     <button class="alt" onclick="Fier.batterySettings()">Let FierCoin run in the background</button>
     <div class="msg" id="safeMsg"></div>
     <div class="note">If you lose your phone and have no backup, your coins are gone. Nobody can recover them.</div>
@@ -195,14 +199,17 @@ function waitForNode(tries) {
     setTimeout(() => waitForNode(tries + 1), 1000);
   }
 }
+function W() { return Fier.activeWallet(); }
+function addrKey() { return 'addr:' + W(); }
 function ensureWallet() {
   const list = call('listwallets');
-  if (list.indexOf('phone') < 0) {
-    try { call('loadwallet', ['phone', true]); }
+  const name = W();
+  if (list.indexOf(name) < 0) {
+    try { call('loadwallet', [name, true]); }
     catch (e) {
       const m = (e.message || '').toLowerCase();
       if (m.indexOf('already loaded') >= 0) { /* fine */ }
-      else if (m.indexOf('not found') >= 0 || m.indexOf('does not exist') >= 0 || e.code === -18) {
+      else if (name === 'phone' && (m.indexOf('not found') >= 0 || m.indexOf('does not exist') >= 0 || e.code === -18)) {
         try { call('createwallet', ['phone', false, false, '', false, false, true]); }
         catch (e2) {
           if ((e2.message || '').toLowerCase().indexOf('already exists') >= 0) call('loadwallet', ['phone', true]);
@@ -211,14 +218,15 @@ function ensureWallet() {
       } else throw e;
     }
   }
-  let a = localStorage.getItem('addr');
+  let a = localStorage.getItem(addrKey()) || (name === 'phone' ? localStorage.getItem('addr') : null);
   let mine = false;
   if (a) { try { mine = call('getaddressinfo', [a], true).ismine === true; } catch (e) { mine = false; } }
   if (!mine) {
     // Never mine or receive to an address this wallet can't spend from.
-    a = call('getnewaddress', ['phone', 'bech32'], true);
-    localStorage.setItem('addr', a);
+    a = call('getnewaddress', ['', 'bech32'], true);
   }
+  localStorage.setItem(addrKey(), a);
+  renderWalletPicker();
   setAddr(a);
 }
 function setAddr(a) {
@@ -270,7 +278,7 @@ function toggleMining() {
     else {
       const t = parseInt($('threads').value, 10); localStorage.setItem('threads', String(t));
       ensureWallet(); // re-checks that the mining address belongs to this wallet
-      call('setgenerate', [true, t, localStorage.getItem('addr')]);
+      call('setgenerate', [true, t, localStorage.getItem(addrKey())]);
     }
   } catch (e) { alert(e.message); }
   refresh();
@@ -278,7 +286,7 @@ function toggleMining() {
 
 function copyAddr() { Fier.copy($('addr').textContent); show('recvMsg', 'Address copied. Paste it to whoever is sending you FIRC.'); }
 function newAddr() {
-  try { const a = call('getnewaddress', ['phone', 'bech32'], true); localStorage.setItem('addr', a); setAddr(a); show('recvMsg', 'New address made. Old addresses still work.'); }
+  try { const a = call('getnewaddress', ['', 'bech32'], true); localStorage.setItem(addrKey(), a); setAddr(a); show('recvMsg', 'New address made. Old addresses still work.'); }
   catch (e) { show('recvMsg', e.message, false); }
 }
 
@@ -443,6 +451,43 @@ function encryptWallet() {
   if (p1 !== p2) { show('safeMsg', 'Passwords did not match. Nothing changed.', false); return; }
   try { call('encryptwallet', [p1], true); show('safeMsg', 'Password set. You will need it to send coins. Now make a new backup.'); }
   catch (e) { show('safeMsg', e.message, false); }
+}
+function renderWalletPicker() {
+  let names = [];
+  try { names = call('listwalletdir').wallets.map(w => w.name).filter(n => n); } catch (e) { names = [W()]; }
+  if (names.indexOf(W()) < 0) names.push(W());
+  const sel = $('walletPick'); sel.innerHTML = '';
+  for (const n of names) {
+    const o = document.createElement('option'); o.value = n;
+    o.textContent = n === 'phone' ? 'This phone (original)' : (n.indexOf('restored-') === 0 ? 'Restored backup ' + n.slice(9) : n);
+    sel.appendChild(o);
+  }
+  sel.value = W();
+}
+function switchWallet(name) {
+  const old = W();
+  Fier.setActiveWallet(name);
+  try { ensureWallet(); refresh(); show('safeMsg', 'Now showing: ' + $('walletPick').selectedOptions[0].textContent + '. If mining, tap Stop then Start mining so new coins go to this wallet.'); }
+  catch (e) { Fier.setActiveWallet(old); renderWalletPicker(); show('safeMsg', 'Could not open that wallet: ' + (e.message || e), false); }
+}
+function restoreBackup(input) {
+  const f = input.files && input.files[0]; input.value = '';
+  if (!f) return;
+  show('safeMsg', 'Restoring ' + f.name + '...');
+  const r = new FileReader();
+  r.onload = () => {
+    const b64 = String(r.result).split(',')[1] || '';
+    const name = Fier.restoreWallet(b64);
+    if (name.indexOf('ERROR') === 0) { show('safeMsg', name.slice(7), false); return; }
+    try {
+      call('loadwallet', [name, true]);
+    } catch (e) { show('safeMsg', 'Could not open the backup: ' + (e.message || e), false); return; }
+    Fier.setActiveWallet(name);
+    try { ensureWallet(); refresh(); } catch (e) {}
+    show('safeMsg', 'Restored! Your backup wallet is now shown above (pick "This phone (original)" in the Wallet list to switch back). Coins can take a minute to appear while it checks the blockchain. Coins from blocks that were Lost do not come back.');
+  };
+  r.onerror = () => show('safeMsg', 'Could not read that file.', false);
+  r.readAsDataURL(f);
 }
 function backup() { show('safeMsg', Fier.backup()); }
 

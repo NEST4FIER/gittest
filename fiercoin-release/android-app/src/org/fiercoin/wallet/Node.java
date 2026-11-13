@@ -18,7 +18,16 @@ import java.util.List;
 /** Settings and RPC access for the bundled FierCoin node. */
 final class Node {
     static final int RPC_PORT = 29332;
-    static final String WALLET = "phone";
+    static final String DEFAULT_WALLET = "phone";
+
+    /** The wallet the app is showing (the original "phone" one, or a restored backup). */
+    static String wallet(Context c) {
+        return prefs(c).getString("wallet", DEFAULT_WALLET);
+    }
+
+    static void setWallet(Context c, String name) {
+        prefs(c).edit().putString("wallet", name).apply();
+    }
 
     private Node() {}
 

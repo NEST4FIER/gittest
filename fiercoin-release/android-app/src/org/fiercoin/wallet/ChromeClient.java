@@ -60,9 +60,11 @@ public final class ChromeClient extends WebChromeClient {
         pendingFile = callback;
         Intent pick = new Intent(Intent.ACTION_GET_CONTENT);
         pick.addCategory(Intent.CATEGORY_OPENABLE);
-        pick.setType("image/*");
+        boolean image = false;
+        for (String t : params.getAcceptTypes()) if (t != null && t.startsWith("image")) image = true;
+        pick.setType(image ? "image/*" : "*/*");
         try {
-            activity.startActivityForResult(Intent.createChooser(pick, "Pick a picture of the QR code"), REQ_PICK_IMAGE);
+            activity.startActivityForResult(Intent.createChooser(pick, image ? "Pick a picture of the QR code" : "Pick your wallet backup file"), REQ_PICK_IMAGE);
         } catch (Exception e) {
             pendingFile = null;
             return false;
