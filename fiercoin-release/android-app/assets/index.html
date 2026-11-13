@@ -161,7 +161,7 @@ function ensureWallet() {
   const list = call('listwallets');
   if (list.indexOf('phone') < 0) {
     try { call('loadwallet', ['phone']); }
-    catch (e) { call('createwallet', ['phone', false, false, '', false, true, true]); }
+    catch (e) { call('createwallet', ['phone', false, false, '', false, false, true]); }
   }
   let a = localStorage.getItem('addr');
   if (!a) { a = call('getnewaddress', ['phone', 'bech32'], true); localStorage.setItem('addr', a); }
