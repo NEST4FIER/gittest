@@ -6711,7 +6711,7 @@ index ee67a42..b2c5670 100755
      print('Your password:\n{0}'.format(args.password))
  
 diff --git a/share/setup.nsi.in b/share/setup.nsi.in
-index 7dc6a5c..2272e5b 100644
+index 7dc6a5c..3ce76b7 100644
 --- a/share/setup.nsi.in
 +++ b/share/setup.nsi.in
 @@ -51,7 +51,7 @@ Var StartMenuGroup
@@ -6723,7 +6723,16 @@ index 7dc6a5c..2272e5b 100644
  CRCCheck on
  XPStyle on
  BrandingText " "
-@@ -99,12 +99,12 @@ Section -post SEC0001
+@@ -92,19 +92,20 @@ Section -post SEC0001
+     !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
+     CreateDirectory $SMPROGRAMS\$StartMenuGroup
+     CreateShortcut "$SMPROGRAMS\$StartMenuGroup\$(^Name).lnk" $INSTDIR\@BITCOIN_GUI_NAME@@EXEEXT@
+-    CreateShortcut "$SMPROGRAMS\$StartMenuGroup\@PACKAGE_NAME@ (testnet, 64-bit).lnk" "$INSTDIR\@BITCOIN_GUI_NAME@@EXEEXT@" "-testnet" "$INSTDIR\@BITCOIN_GUI_NAME@@EXEEXT@" 1
++    ; FierCoin: no testnet shortcut (it confused people); remove one left by older installers
++    Delete "$SMPROGRAMS\$StartMenuGroup\@PACKAGE_NAME@ (testnet, 64-bit).lnk"
+     CreateShortcut "$SMPROGRAMS\$StartMenuGroup\Uninstall $(^Name).lnk" $INSTDIR\uninstall.exe
+     !insertmacro MUI_STARTMENU_WRITE_END
+     WriteRegStr HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" DisplayName "$(^Name)"
      WriteRegStr HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" DisplayVersion "@PACKAGE_VERSION@"
      WriteRegStr HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" Publisher "${COMPANY}"
      WriteRegStr HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" URLInfoAbout "${URL}"
@@ -6738,7 +6747,7 @@ index 7dc6a5c..2272e5b 100644
      WriteRegStr HKCR "@PACKAGE_TARNAME@\DefaultIcon" "" $INSTDIR\@BITCOIN_GUI_NAME@@EXEEXT@
      WriteRegStr HKCR "@PACKAGE_TARNAME@\shell\open\command" "" '"$INSTDIR\@BITCOIN_GUI_NAME@@EXEEXT@" "%1"'
  SectionEnd
-@@ -137,7 +137,7 @@ Section -un.post UNSEC0001
+@@ -137,7 +138,7 @@ Section -un.post UNSEC0001
      Delete /REBOOTOK "$SMPROGRAMS\$StartMenuGroup\Uninstall $(^Name).lnk"
      Delete /REBOOTOK "$SMPROGRAMS\$StartMenuGroup\$(^Name).lnk"
      Delete /REBOOTOK "$SMPROGRAMS\$StartMenuGroup\@PACKAGE_NAME@ (testnet, 64-bit).lnk"
