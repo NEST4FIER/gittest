@@ -1,0 +1,16 @@
+--- depends/packages/libfmt.mk	2026-11-13 02:32:17.000000000 +0000
++++ /home/user/fiercoin-android/depends/packages/libfmt.mk	2026-11-13 04:03:04.049297627 +0000
+@@ -4,8 +4,12 @@
+ $(package)_file_name=$($(package)_version).tar.gz
+ $(package)_sha256_hash=5cae7072042b3043e12d53d50ef404bbb76949dad1de368d7f993a15c8c05ecc
+ 
++ifeq ($(host_os),android)
++$(package)_android_flags=-DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DCMAKE_ANDROID_NDK=$(ANDROID_NDK) -DCMAKE_SYSTEM_VERSION=$(ANDROID_API_LEVEL) -DCMAKE_C_COMPILER_TARGET=aarch64-linux-android$(ANDROID_API_LEVEL) -DCMAKE_CXX_COMPILER_TARGET=aarch64-linux-android$(ANDROID_API_LEVEL) -DFMT_TEST=OFF -DFMT_DOC=OFF
++endif
++
+ define $(package)_config_cmds
+-  $($(package)_cmake) -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true
++  $($(package)_cmake) -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true $($(package)_android_flags)
+ endef
+ 
+ define $(package)_build_cmds

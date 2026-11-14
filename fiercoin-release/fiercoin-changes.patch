@@ -6711,7 +6711,7 @@ index ee67a42..b2c5670 100755
      print('Your password:\n{0}'.format(args.password))
  
 diff --git a/share/setup.nsi.in b/share/setup.nsi.in
-index 7dc6a5c..2272e5b 100644
+index 7dc6a5c..3ce76b7 100644
 --- a/share/setup.nsi.in
 +++ b/share/setup.nsi.in
 @@ -51,7 +51,7 @@ Var StartMenuGroup
@@ -6723,7 +6723,16 @@ index 7dc6a5c..2272e5b 100644
  CRCCheck on
  XPStyle on
  BrandingText " "
-@@ -99,12 +99,12 @@ Section -post SEC0001
+@@ -92,19 +92,20 @@ Section -post SEC0001
+     !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
+     CreateDirectory $SMPROGRAMS\$StartMenuGroup
+     CreateShortcut "$SMPROGRAMS\$StartMenuGroup\$(^Name).lnk" $INSTDIR\@BITCOIN_GUI_NAME@@EXEEXT@
+-    CreateShortcut "$SMPROGRAMS\$StartMenuGroup\@PACKAGE_NAME@ (testnet, 64-bit).lnk" "$INSTDIR\@BITCOIN_GUI_NAME@@EXEEXT@" "-testnet" "$INSTDIR\@BITCOIN_GUI_NAME@@EXEEXT@" 1
++    ; FierCoin: no testnet shortcut (it confused people); remove one left by older installers
++    Delete "$SMPROGRAMS\$StartMenuGroup\@PACKAGE_NAME@ (testnet, 64-bit).lnk"
+     CreateShortcut "$SMPROGRAMS\$StartMenuGroup\Uninstall $(^Name).lnk" $INSTDIR\uninstall.exe
+     !insertmacro MUI_STARTMENU_WRITE_END
+     WriteRegStr HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" DisplayName "$(^Name)"
      WriteRegStr HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" DisplayVersion "@PACKAGE_VERSION@"
      WriteRegStr HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" Publisher "${COMPANY}"
      WriteRegStr HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" URLInfoAbout "${URL}"
@@ -6738,7 +6747,7 @@ index 7dc6a5c..2272e5b 100644
      WriteRegStr HKCR "@PACKAGE_TARNAME@\DefaultIcon" "" $INSTDIR\@BITCOIN_GUI_NAME@@EXEEXT@
      WriteRegStr HKCR "@PACKAGE_TARNAME@\shell\open\command" "" '"$INSTDIR\@BITCOIN_GUI_NAME@@EXEEXT@" "%1"'
  SectionEnd
-@@ -137,7 +137,7 @@ Section -un.post UNSEC0001
+@@ -137,7 +138,7 @@ Section -un.post UNSEC0001
      Delete /REBOOTOK "$SMPROGRAMS\$StartMenuGroup\Uninstall $(^Name).lnk"
      Delete /REBOOTOK "$SMPROGRAMS\$StartMenuGroup\$(^Name).lnk"
      Delete /REBOOTOK "$SMPROGRAMS\$StartMenuGroup\@PACKAGE_NAME@ (testnet, 64-bit).lnk"
@@ -9050,6 +9059,38 @@ index e8026d0..2543f2b 100644
                      CClientUIInterface::ICON_WARNING);
  
              return;
+diff --git a/src/qt/receivecoinsdialog.cpp b/src/qt/receivecoinsdialog.cpp
+index 69bd132..3c50f87 100644
+--- a/src/qt/receivecoinsdialog.cpp
++++ b/src/qt/receivecoinsdialog.cpp
+@@ -29,6 +29,13 @@ ReceiveCoinsDialog::ReceiveCoinsDialog(const PlatformStyle *_platformStyle, QWid
+ {
+     ui->setupUi(this);
+ 
++    // FierCoin: MWEB is not active on this chain, and mixed address formats confuse people,
++    // so the Receive tab only makes firc1... addresses.
++    ui->useBech32->setChecked(true);
++    ui->useBech32->hide();
++    ui->useMWEB->setChecked(false);
++    ui->useMWEB->hide();
++
+     if (!_platformStyle->getImagesOnButtons()) {
+         ui->clearButton->setIcon(QIcon());
+         ui->receiveButton->setIcon(QIcon());
+@@ -95,11 +102,8 @@ void ReceiveCoinsDialog::setModel(WalletModel *_model)
+         // Last 2 columns are set by the columnResizingFixer, when the table geometry is ready.
+         columnResizingFixer = new GUIUtil::TableViewLastColumnResizingFixer(tableView, AMOUNT_MINIMUM_COLUMN_WIDTH, DATE_COLUMN_WIDTH, this);
+ 
+-        if (model->wallet().getDefaultAddressType() == OutputType::BECH32) {
+-            ui->useBech32->setCheckState(Qt::Checked);
+-        } else {
+-            ui->useBech32->setCheckState(Qt::Unchecked);
+-        }
++        // FierCoin: always give out firc1... (bech32) addresses, like the phone app.
++        ui->useBech32->setCheckState(Qt::Checked);
+ 
+         // Set the button to be enabled or disabled based on whether the wallet can give out new addresses.
+         ui->receiveButton->setEnabled(model->wallet().canGetAddresses());
 diff --git a/src/qt/res/bitcoin-qt-res.rc b/src/qt/res/bitcoin-qt-res.rc
 index 9f7d0ea..397c1cd 100644
 --- a/src/qt/res/bitcoin-qt-res.rc
