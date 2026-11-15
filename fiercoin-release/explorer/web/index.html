@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FierCoin Explorer</title>
+<link rel="icon" href="logo.png">
+<style>
+  :root { --bg:#16110f; --card:#231a16; --line:#3a2b24; --text:#fff4ea; --muted:#c9b3a3; --fire:#ff8f00; --red:#d84315; --green:#81c784; --pink:#ff8a65; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; }
+  a { color:var(--fire); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  .top { background:#1d1512; border-bottom:1px solid var(--line); }
+  .wrap { max-width:1100px; margin:0 auto; padding:14px 16px; }
+  .bar { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .brand { display:flex; align-items:center; gap:10px; color:var(--text); font-weight:800; font-size:20px; }
+  .brand img { width:36px; height:36px; }
+  .nav { display:flex; gap:14px; font-weight:600; }
+  form { flex:1; display:flex; gap:8px; min-width:260px; }
+  input { flex:1; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:#120d0b; color:var(--text); font-size:15px; min-width:0; }
+  button { border:0; border-radius:10px; padding:10px 16px; font-weight:700; color:#fff; background:linear-gradient(180deg,var(--fire),var(--red)); cursor:pointer; font-size:15px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:16px 0; }
+  .stat, .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; }
+  .stat small { color:var(--muted); display:block; }
+  .stat b { font-size:20px; }
+  .card { margin-bottom:14px; overflow-x:auto; }
+  .card h2 { font-size:17px; margin:0 0 10px; color:var(--fire); }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:13px; }
+  .mono { font-family:ui-monospace, Consolas, monospace; font-size:13px; word-break:break-all; }
+  .kv { display:grid; grid-template-columns:170px 1fr; gap:6px 12px; }
+  .kv div:nth-child(odd) { color:var(--muted); }
+  .in { color:var(--green); } .out { color:var(--pink); }
+  .muted { color:var(--muted); }
+  .flow { display:grid; grid-template-columns:1fr 40px 1fr; gap:10px; align-items:start; }
+  .arrow { text-align:center; font-size:26px; color:var(--fire); padding-top:24px; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:20px; font-size:12px; background:#3a2b24; }
+  .err { background:#4a1a12; border-color:#7a2a1a; }
+  @media (max-width:640px) { .kv { grid-template-columns:1fr; } .kv div:nth-child(odd) { margin-top:6px; } .flow { grid-template-columns:1fr; } .arrow { padding:0; transform:rotate(90deg); } .hide-sm { display:none; } }
+</style>
+</head>
+<body>
+<div class="top"><div class="wrap bar">
+  <a class="brand" href="#/"><img src="logo.png" alt="">FierCoin Explorer</a>
+  <div class="nav"><a href="#/">Blocks</a><a href="#/rich">Rich list</a></div>
+  <form onsubmit="return doSearch()"><input id="q" placeholder="Search block number, hash, transaction ID or address"><button>Search</button></form>
+</div></div>
+<div class="wrap" id="main">Loading...</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+const fmt = n => (Math.round(Number(n) * 1e8) / 1e8).toLocaleString(undefined, { maximumFractionDigits: 8 });
+const sat = n => fmt(Number(n) / 1e8);
+const when = t => new Date(t * 1000).toLocaleString();
+function ago(t) { const s = Math.max(0, Math.floor(Date.now() / 1000 - t)); if (s < 60) return s + ' sec ago'; if (s < 3600) return Math.floor(s / 60) + ' min ago'; if (s < 86400) return Math.floor(s / 3600) + ' hours ago'; return Math.floor(s / 86400) + ' days ago'; }
+function hashps(h) { const u = ['H/s','kH/s','MH/s','GH/s','TH/s']; let i = 0; h = Number(h) || 0; while (h >= 1000 && i < u.length - 1) { h /= 1000; i++; } return h.toFixed(2) + ' ' + u[i]; }
+const addrLink = a => a && a[0] !== '(' ? '<a class="mono" href="#/address/' + esc(a) + '">' + esc(a) + '</a>' : '<span class="muted">' + esc(a || '?') + '</span>';
+const txLink = (t, short) => '<a class="mono" href="#/tx/' + esc(t) + '">' + esc(short ? t.slice(0, 16) + '…' : t) + '</a>';
+const blockLink = h => '<a href="#/block/' + esc(h) + '">#' + esc(h) + '</a>';
+function addrOf(spk) { if (!spk) return '?'; if (spk.address) return spk.address; if (spk.addresses && spk.addresses.length) return spk.addresses[0]; return '(' + (spk.type || '?') + ')'; }
+
+async function api(path) {
+  const r = await fetch('/api/' + path);
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || 'Error');
+  return j;
+}
+function fail(e) { $('main').innerHTML = '<div class="card err">' + esc(e.message || e) + '</div><a href="#/">&larr; Back to latest blocks</a>'; }
+
+async function home(start) {
+  const [s, blocks, mem] = await Promise.all([api('status'), api('blocks' + (start != null ? '?start=' + start : '')), api('mempool')]);
+  let h = '<div class="grid">' +
+    '<div class="stat"><small>Blocks</small><b>' + Number(s.blocks).toLocaleString() + '</b></div>' +
+    '<div class="stat"><small>Difficulty</small><b>' + Number(s.difficulty).toPrecision(4) + '</b></div>' +
+    '<div class="stat"><small>Network speed</small><b>' + hashps(s.hashps) + '</b></div>' +
+    '<div class="stat"><small>Coins mined</small><b>' + fmt(s.supply) + '</b><small>of 84,000,000 FIRC</small></div>' +
+    '<div class="stat"><small>Connected computers</small><b>' + esc(s.peers) + '</b></div>' +
+    '<div class="stat"><small>Waiting transactions</small><b>' + esc(s.mempool) + '</b></div></div>';
+  h += '<div class="card"><h2>Latest blocks</h2><table><tr><th>Block</th><th>Time</th><th>Tx</th><th class="hide-sm">Mined by</th><th>Reward</th></tr>';
+  for (const b of blocks) h += '<tr><td>' + blockLink(b.height) + '</td><td title="' + when(b.time) + '">' + ago(b.time) + '</td><td>' + b.ntx + '</td><td class="hide-sm">' + addrLink(b.miner) + '</td><td>' + sat(b.reward) + ' FIRC</td></tr>';
+  h += '</table>';
+  if (blocks.length && blocks[blocks.length - 1].height > 0) h += '<p><a href="#/blocks/' + (blocks[blocks.length - 1].height - 1) + '">Older blocks &rarr;</a></p>';
+  h += '</div>';
+  if (mem.length) { h += '<div class="card"><h2>Waiting for the next block (' + mem.length + ')</h2>'; for (const t of mem.slice(0, 20)) h += '<div>' + txLink(t) + '</div>'; h += '</div>'; }
+  $('main').innerHTML = h;
+}
+
+async function blockPage(id) {
+  const b = await api('block/' + encodeURIComponent(id));
+  let h = '<div class="card"><h2>Block #' + b.height + '</h2><div class="kv">' +
+    '<div>Hash</div><div class="mono">' + esc(b.hash) + '</div>' +
+    '<div>Time</div><div>' + when(b.time) + ' (' + ago(b.time) + ')</div>' +
+    '<div>Transactions</div><div>' + b.nTx + '</div>' +
+    '<div>Confirmations</div><div>' + b.confirmations + '</div>' +
+    '<div>Difficulty</div><div>' + Number(b.difficulty).toPrecision(6) + '</div>' +
+    '<div>Size</div><div>' + Number(b.size).toLocaleString() + ' bytes</div>' +
+    '<div>Nonce</div><div>' + b.nonce + '</div>' +
+    '<div>Previous block</div><div>' + (b.previousblockhash ? blockLink(b.height - 1) : '<span class="muted">(first block)</span>') + '</div>' +
+    '<div>Next block</div><div>' + (b.nextblockhash ? blockLink(b.height + 1) : '<span class="muted">(newest)</span>') + '</div></div></div>';
+  h += '<div class="card"><h2>Transactions</h2><table><tr><th>Transaction</th><th>Type</th><th>Amount</th></tr>';
+  for (const t of b.tx) {
+    const total = t.vout.reduce((a, o) => a + Number(o.value), 0);
+    const cb = t.vin[0] && t.vin[0].coinbase !== undefined;
+    h += '<tr><td>' + txLink(t.txid, true) + '</td><td>' + (cb ? '<span class="pill">Mining reward</span>' : 'Transfer') + '</td><td>' + fmt(total) + ' FIRC</td></tr>';
+  }
+  $('main').innerHTML = h + '</table></div>';
+}
+
+async function txPage(id) {
+  const t = await api('tx/' + encodeURIComponent(id));
+  let h = '<div class="card"><h2>Transaction</h2><div class="kv">' +
+    '<div>Transaction ID</div><div class="mono">' + esc(t.txid) + '</div>' +
+    '<div>Status</div><div>' + (t.confirmations ? '<span class="in">Confirmed</span> (' + t.confirmations + ' confirmations)' : '<span class="out">Waiting for a block</span>') + '</div>' +
+    (t.blocktime ? '<div>Time</div><div>' + when(t.blocktime) + '</div>' : '') +
+    (t.blockhash ? '<div>Block</div><div><a class="mono" href="#/block/' + esc(t.blockhash) + '">' + esc(t.blockhash) + '</a></div>' : '') +
+    '<div>Size</div><div>' + t.size + ' bytes</div></div></div>';
+  let ins = '', outs = '', totalIn = 0, totalOut = 0;
+  for (const i of t.vin) {
+    if (i.coinbase !== undefined) { ins += '<div><span class="pill">New coins from mining</span></div>'; continue; }
+    if (i.prev_value != null) totalIn += Number(i.prev_value);
+    ins += '<div style="margin-bottom:8px">' + (i.prev_address ? addrLink(i.prev_address) : txLink(i.txid, true) + ':' + i.vout) + '<br><span class="out">' + (i.prev_value != null ? fmt(i.prev_value) + ' FIRC' : '') + '</span> <small class="muted">' + txLink(i.txid, true).replace('mono', 'mono muted') + '</small></div>';
+  }
+  for (const o of t.vout) {
+    totalOut += Number(o.value);
+    outs += '<div style="margin-bottom:8px">' + addrLink(addrOf(o.scriptPubKey)) + '<br><span class="in">' + fmt(o.value) + ' FIRC</span> ' + (o.spent_by ? '<small class="muted">spent in ' + txLink(o.spent_by, true) + '</small>' : '<small class="muted">not spent yet</small>') + '</div>';
+  }
+  h += '<div class="card"><div class="flow"><div><h2>From</h2>' + ins + '</div><div class="arrow">&rarr;</div><div><h2>To</h2>' + outs + '</div></div>';
+  if (totalIn > 0) h += '<p class="muted">Fee: ' + fmt(totalIn - totalOut) + ' FIRC</p>';
+  $('main').innerHTML = h + '</div>';
+}
+
+async function addressPage(a) {
+  const d = await api('address/' + encodeURIComponent(a));
+  let h = '<div class="card"><h2>Address</h2><div class="kv">' +
+    '<div>Address</div><div class="mono">' + esc(d.address) + '</div>' +
+    '<div>Balance</div><div><b>' + fmt(d.balance) + ' FIRC</b></div>' +
+    '<div>Total received</div><div class="in">' + fmt(d.received) + ' FIRC</div>' +
+    '<div>Total sent</div><div class="out">' + fmt(d.sent) + ' FIRC</div>' +
+    '<div>Transactions</div><div>' + d.txcount + '</div></div></div>';
+  h += '<div class="card"><h2>Transactions' + (d.txcount > 100 ? ' (newest 100)' : '') + '</h2><table><tr><th>Transaction</th><th>Block</th><th>Time</th><th>Amount</th></tr>';
+  for (const t of d.txs) h += '<tr><td>' + txLink(t.txid, true) + '</td><td>' + blockLink(t.height) + '</td><td>' + ago(t.time) + '</td><td class="' + (t.delta >= 0 ? 'in' : 'out') + '">' + (t.delta >= 0 ? '+' : '') + sat(t.delta) + '</td></tr>';
+  if (!d.txs.length) h += '<tr><td colspan="4" class="muted">No transactions yet.</td></tr>';
+  $('main').innerHTML = h + '</table></div>';
+}
+
+async function richPage() {
+  const rows = await api('richlist');
+  let h = '<div class="card"><h2>Rich list (top 50 addresses)</h2><table><tr><th>#</th><th>Address</th><th>Balance</th></tr>';
+  rows.forEach((r, i) => h += '<tr><td>' + (i + 1) + '</td><td>' + addrLink(r.address) + '</td><td>' + fmt(r.balance) + ' FIRC</td></tr>');
+  $('main').innerHTML = h + '</table></div>';
+}
+
+async function route() {
+  const p = location.hash.replace(/^#\/?/, '').split('/');
+  window.scrollTo(0, 0);
+  try {
+    if (p[0] === 'block') await blockPage(p[1]);
+    else if (p[0] === 'tx') await txPage(p[1]);
+    else if (p[0] === 'address') await addressPage(p[1]);
+    else if (p[0] === 'rich') await richPage();
+    else if (p[0] === 'blocks') await home(parseInt(p[1], 10));
+    else await home();
+  } catch (e) { fail(e); }
+}
+async function doSearch() {
+  const q = $('q').value.trim();
+  if (!q) return false;
+  try { const r = await api('search?q=' + encodeURIComponent(q)); location.hash = '#/' + r.type + '/' + r.id; $('q').value = ''; }
+  catch (e) { fail(e); }
+  return false;
+}
+window.addEventListener('hashchange', route);
+route();
+setInterval(() => { if (!location.hash || location.hash === '#/' ) route(); }, 30000);
+</script>
+</body>
+</html>

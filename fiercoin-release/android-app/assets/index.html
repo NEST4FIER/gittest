@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>FierCoin</title>
+<style>
+  :root { --bg:#16110f; --card:#231a16; --line:#3a2b24; --text:#fff4ea; --muted:#c9b3a3; --fire:#ff8f00; --red:#d84315; --ok:#4caf50; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.4 system-ui, sans-serif; padding:16px 16px 40px; }
+  header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  header img { width:48px; height:48px; }
+  header h1 { font-size:22px; margin:0; }
+  header small { color:var(--muted); display:block; font-size:13px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; }
+  .card h2 { font-size:16px; margin:0 0 10px; color:var(--fire); }
+  .row { display:flex; justify-content:space-between; gap:8px; padding:4px 0; }
+  .row span:first-child { color:var(--muted); }
+  .big { font-size:28px; font-weight:700; }
+  button { width:100%; border:0; border-radius:12px; padding:14px; font-size:17px; font-weight:700; color:#fff; background:linear-gradient(180deg,var(--fire),var(--red)); margin-top:8px; }
+  button.alt { background:#3a2b24; }
+  button.stop { background:#5d1f12; }
+  button:disabled { opacity:.5; }
+  input, select { width:100%; padding:12px; border-radius:10px; border:1px solid var(--line); background:#120d0b; color:var(--text); font-size:16px; margin-top:6px; }
+  .addr { word-break:break-all; font-family:monospace; font-size:14px; background:#120d0b; padding:10px; border-radius:10px; margin-top:6px; }
+  .note { color:var(--muted); font-size:13px; margin-top:8px; }
+  .msg { padding:10px; border-radius:10px; background:#2e2119; margin-top:8px; display:none; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:#777; margin-right:6px; }
+  .dot.on { background:var(--ok); }
+  .hidden { display:none; }
+  #explorer { position:fixed; inset:0; background:var(--bg); z-index:9; display:none; overflow-y:auto; padding:16px 16px 40px; }
+  .mono { font-family:monospace; font-size:13px; word-break:break-all; }
+  .click { cursor:pointer; }
+  #scanner { position:fixed; inset:0; background:#000; z-index:10; display:none; flex-direction:column; align-items:center; justify-content:center; padding:16px; }
+  #scanner video { width:100%; max-width:480px; border-radius:14px; border:3px solid var(--fire); }
+  #scanner p { color:#fff; text-align:center; }
+  #scanner button { max-width:480px; }
+  #qrbox { background:#fff; border-radius:12px; padding:10px; width:220px; margin:10px auto 0; }
+  #qrbox img { width:200px; height:200px; display:block; image-rendering:pixelated; }
+  .link { background:none; color:var(--fire); font-weight:600; font-size:15px; padding:8px; margin-top:2px; }
+  .tx { padding:8px 0; border-bottom:1px solid var(--line); }
+  .txtop { display:flex; justify-content:space-between; gap:8px; }
+  .txsub { color:var(--muted); font-size:12px; margin-top:2px; word-break:break-all; }
+  .nodes div { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--line); font-family:monospace; font-size:14px; }
+  .nodes button { width:auto; padding:6px 10px; font-size:13px; margin:0; }
+</style>
+</head>
+<body>
+<header>
+  <img src="logo.png" alt="">
+  <div><h1>FierCoin</h1><small>FIRC: mine and keep coins on your phone</small></div>
+</header>
+
+<div class="card" id="startCard">
+  <h2>Welcome</h2>
+  <div>Press start to run FierCoin on this phone. The first start takes up to a minute.</div>
+  <button id="startBtn" onclick="startNode()">Start FierCoin</button>
+  <div class="msg" id="startMsg"></div>
+</div>
+
+<div id="app" class="hidden">
+  <div class="card">
+    <h2><span class="dot" id="dot"></span>Network</h2>
+    <div class="row"><span>Status</span><span id="status">Starting...</span></div>
+    <div class="row"><span>Blocks</span><span id="blocks">-</span></div>
+    <div class="row"><span>Connected to</span><span id="peers">-</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Balance</h2>
+    <div class="row"><span>Wallet</span><span></span></div>
+    <select id="walletPick" onchange="switchWallet(this.value)"></select>
+    <div class="big" id="bal">0 FIRC</div>
+    <div class="row"><span>Being confirmed (mined)</span><span id="imm">0</span></div>
+    <div class="row"><span>Incoming</span><span id="pend">0</span></div>
+    <div class="note">Mined coins can be spent after 100 more blocks (about 4 hours).</div>
+    <div class="msg" id="walletErr"></div>
+  </div>
+
+  <div class="card">
+    <h2>History</h2>
+    <div id="history"><div class="tx"><span>No sends or receives yet</span></div></div>
+    <div class="note">Newest first. Tap one to see it in the explorer.</div>
+    <div class="msg" id="histMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Explorer</h2>
+    <div class="note">See every block and transaction on the FierCoin blockchain.</div>
+    <button class="alt" onclick="openExplorer()">Open explorer</button>
+  </div>
+
+  <div class="card">
+    <h2>Mining rewards</h2>
+    <div class="nodes" id="rewards"><div><span>No rewards yet</span></div></div>
+    <div class="note">"Lost" means another computer found that block at the same time and its block won. That's normal; those coins were never real.</div>
+  </div>
+
+  <div class="card">
+    <h2>Mining</h2>
+    <div class="row"><span>Miner</span><span id="mstate">Off</span></div>
+    <div class="row"><span>Speed</span><span id="mspeed">0 H/s</span></div>
+    <div class="row"><span>Blocks found</span><span id="mfound">0</span></div>
+    <label class="note">How hard to work (more = faster, hotter phone)</label>
+    <select id="threads"></select>
+    <button id="mineBtn" onclick="toggleMining()">Start mining</button>
+    <div class="note">Tip: mine while charging. Phones get warm when mining.</div>
+  </div>
+
+  <div class="card">
+    <h2>Receive</h2>
+    <div id="qrbox"><img id="qrimg" alt="Your address as a QR code"></div>
+    <div class="addr" id="addr">...</div>
+    <button class="alt" onclick="copyAddr()">Copy address</button>
+    <button class="alt" onclick="newAddr()">Make a new address</button>
+    <div class="msg" id="recvMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Send</h2>
+    <button class="alt" onclick="startScan()">&#128247; Scan QR code</button>
+    <button class="link" onclick="$('qrFile').click()">or scan a picture / screenshot of a QR code</button>
+    <input type="file" id="qrFile" accept="image/*" class="hidden" onchange="scanPicture(this)">
+    <input id="sendTo" placeholder="Their FierCoin address (firc1...)" autocomplete="off" autocapitalize="off">
+    <input id="sendAmt" placeholder="Amount of FIRC" inputmode="decimal">
+    <button onclick="sendCoins()">Send</button>
+    <div class="msg" id="sendMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Connect to your laptop or friends</h2>
+    <div class="note">Type the IP address of a computer running FierCoin (for your laptop at home, something like 192.168.1.20). This keeps everyone on the same blockchain.</div>
+    <input id="nodeIp" placeholder="IP address, e.g. 192.168.1.20" autocomplete="off" autocapitalize="off">
+    <button class="alt" onclick="addNode()">Connect</button>
+    <div class="nodes" id="nodes"></div>
+  </div>
+
+  <div class="card">
+    <h2>Keep your coins safe</h2>
+    <button class="alt" onclick="encryptWallet()">Set a wallet password</button>
+    <button class="alt" onclick="backup()">Back up wallet to Downloads</button>
+    <button class="alt" onclick="$('restoreFile').click()">Restore from a backup file</button>
+    <input type="file" id="restoreFile" accept="*/*" class="hidden" onchange="restoreBackup(this)">
+    <button class="alt" onclick="Fier.batterySettings()">Let FierCoin run in the background</button>
+    <div class="msg" id="safeMsg"></div>
+    <div class="note">If you lose your phone and have no backup, your coins are gone. Nobody can recover them.</div>
+  </div>
+
+  <button class="stop" onclick="stopNode()">Stop FierCoin</button>
+</div>
+
+<div id="explorer">
+  <header style="justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:12px"><img src="logo.png" alt=""><div><h1>Explorer</h1><small>FierCoin blockchain</small></div></div>
+  </header>
+  <button class="alt" onclick="closeExplorer()" style="margin-top:0">&larr; Back to wallet</button>
+  <div class="card" style="margin-top:12px">
+    <input id="exSearch" placeholder="Block number, block hash, or transaction ID" autocomplete="off" autocapitalize="off">
+    <button onclick="exSearch()">Search</button>
+    <div class="msg" id="exMsg"></div>
+  </div>
+  <div id="exBody"></div>
+</div>
+
+<div id="scanner">
+  <p>Point the camera at a FierCoin QR code</p>
+  <video id="scanVideo" playsinline muted></video>
+  <canvas id="scanCanvas" class="hidden"></canvas>
+  <button class="stop" onclick="stopScan()">Cancel</button>
+</div>
+
+<script src="jsQR.js"></script>
+<script src="qrcode.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let spendable = 0;
+let ready = false, mining = false, polling = null, peerCount = 0;
+
+function call(method, params, wallet) {
+  const reply = wallet ? Fier.walletRpc(method, JSON.stringify(params || [])) : Fier.rpc(method, JSON.stringify(params || []));
+  let j;
+  try { j = JSON.parse(reply); } catch (e) { throw { code: -1, message: 'Bad reply from node' }; }
+  if (j.error) throw j.error;
+  return j.result;
+}
+function show(id, text, ok) {
+  const el = $(id); el.style.display = 'block'; el.textContent = text;
+  el.style.background = ok === false ? '#4a1a12' : '#2e2119';
+}
+function fmt(n) { return (Math.round(n * 1e8) / 1e8).toLocaleString(undefined, { maximumFractionDigits: 8 }); }
+
+function setupThreads() {
+  const cpus = Math.max(1, Fier.cpuCount());
+  const opts = [[1, 'Light (1 core)'], [2, 'Normal (2 cores)'], [Math.max(2, Math.floor(cpus / 2)), 'Strong (' + Math.max(2, Math.floor(cpus / 2)) + ' cores)'], [cpus, 'Max (' + cpus + ' cores)']];
+  const seen = new Set();
+  for (const [n, label] of opts) {
+    if (seen.has(n)) continue; seen.add(n);
+    const o = document.createElement('option'); o.value = n; o.textContent = label; $('threads').appendChild(o);
+  }
+  $('threads').value = localStorage.getItem('threads') || '2';
+}
+
+function startNode() {
+  $('startBtn').disabled = true;
+  show('startMsg', 'Starting FierCoin...');
+  Fier.start();
+  waitForNode(0);
+}
+function waitForNode(tries) {
+  const err = Fier.lastError();
+  if (err) { show('startMsg', err, false); $('startBtn').disabled = false; return; }
+  try {
+    call('getblockchaininfo');
+    ensureWallet();
+    $('startCard').classList.add('hidden'); $('app').classList.remove('hidden');
+    ready = true; refresh();
+    if (!polling) polling = setInterval(refresh, 4000);
+  } catch (e) {
+    if (tries > 90) { show('startMsg', 'FierCoin did not start: ' + (e.message || e), false); $('startBtn').disabled = false; return; }
+    show('startMsg', 'Starting FierCoin... ' + (e.code === -28 ? e.message : '') );
+    setTimeout(() => waitForNode(tries + 1), 1000);
+  }
+}
+function W() { return Fier.activeWallet(); }
+function addrKey() { return 'addr:' + W(); }
+function ensureWallet() {
+  const list = call('listwallets');
+  const name = W();
+  if (list.indexOf(name) < 0) {
+    try { call('loadwallet', [name, true]); }
+    catch (e) {
+      const m = (e.message || '').toLowerCase();
+      if (m.indexOf('already loaded') >= 0) { /* fine */ }
+      else if (name === 'phone' && (m.indexOf('not found') >= 0 || m.indexOf('does not exist') >= 0 || e.code === -18)) {
+        try { call('createwallet', ['phone', false, false, '', false, false, true]); }
+        catch (e2) {
+          if ((e2.message || '').toLowerCase().indexOf('already exists') >= 0) call('loadwallet', ['phone', true]);
+          else throw e2;
+        }
+      } else throw e;
+    }
+  }
+  let a = localStorage.getItem(addrKey()) || (name === 'phone' ? localStorage.getItem('addr') : null);
+  let mine = false;
+  if (a) { try { mine = call('getaddressinfo', [a], true).ismine === true; } catch (e) { mine = false; } }
+  if (!mine) {
+    // Never mine or receive to an address this wallet can't spend from.
+    a = call('getnewaddress', ['', 'bech32'], true);
+  }
+  localStorage.setItem(addrKey(), a);
+  renderWalletPicker();
+  setAddr(a);
+}
+function setAddr(a) {
+  $('addr').textContent = a;
+  try {
+    const q = qrcode(0, 'M'); q.addData('fiercoin:' + a); q.make();
+    $('qrimg').src = q.createDataURL(8, 2);
+  } catch (e) { $('qrbox').style.display = 'none'; }
+}
+
+function refresh() {
+  if (!ready) return;
+  if (!Fier.running()) { $('status').textContent = 'Stopped'; $('dot').classList.remove('on'); return; }
+  try {
+    const bc = call('getblockchaininfo');
+    const peers = call('getconnectioncount');
+    $('blocks').textContent = bc.blocks.toLocaleString();
+    $('peers').textContent = peers + (peers === 1 ? ' computer' : ' computers');
+    $('status').textContent = peers > 0 ? 'Online' : 'Running alone (not connected)';
+    $('dot').classList.add('on');
+    peerCount = peers;
+    const g = call('getgenerate');
+    mining = g.generating;
+    $('mstate').textContent = mining ? 'Mining with ' + g.threads + ' core(s)' : 'Off';
+    $('mspeed').textContent = Math.round(g.hashespersec).toLocaleString() + ' H/s';
+    $('mfound').textContent = g.blocksfound;
+    $('mineBtn').textContent = mining ? 'Stop mining' : 'Start mining';
+    $('mineBtn').className = mining ? 'stop' : '';
+  } catch (e) { $('status').textContent = e.message || 'Working...'; }
+  try {
+    const b = call('getbalances', [], true).mine;
+    spendable = b.trusted;
+    $('bal').textContent = fmt(b.trusted) + ' FIRC';
+    $('imm').textContent = fmt(b.immature);
+    $('pend').textContent = fmt(b.untrusted_pending);
+    $('walletErr').style.display = 'none';
+    renderRewards();
+  } catch (e) {
+    $('bal').textContent = '?';
+    show('walletErr', 'Wallet not loaded: ' + (e.message || e) + '. Trying again...', false);
+    try { ensureWallet(); } catch (e2) {}
+  }
+  renderNodes();
+}
+
+function toggleMining() {
+  try {
+    if (mining) { call('setgenerate', [false]); }
+    else {
+      const t = parseInt($('threads').value, 10); localStorage.setItem('threads', String(t));
+      ensureWallet(); // re-checks that the mining address belongs to this wallet
+      call('setgenerate', [true, t, localStorage.getItem(addrKey())]);
+    }
+  } catch (e) { alert(e.message); }
+  refresh();
+}
+
+function copyAddr() { Fier.copy($('addr').textContent); show('recvMsg', 'Address copied. Paste it to whoever is sending you FIRC.'); }
+function newAddr() {
+  try { const a = call('getnewaddress', ['', 'bech32'], true); localStorage.setItem(addrKey(), a); setAddr(a); show('recvMsg', 'New address made. Old addresses still work.'); }
+  catch (e) { show('recvMsg', e.message, false); }
+}
+
+function unlockIfNeeded() {
+  const info = call('getwalletinfo', [], true);
+  if (info.unlocked_until === undefined || info.unlocked_until > 0) return true;
+  const pass = prompt('Enter your wallet password');
+  if (!pass) return false;
+  call('walletpassphrase', [pass, 60], true);
+  return true;
+}
+function sendCoins() {
+  const to = $('sendTo').value.trim(), amt = parseFloat($('sendAmt').value);
+  if (!to || !(amt > 0)) { show('sendMsg', 'Enter an address and an amount.', false); return; }
+  if (amt > spendable) {
+    show('sendMsg', 'You can send up to ' + fmt(spendable) + ' FIRC right now. Freshly mined coins must wait 100 blocks (see Mining rewards) before they can be sent.', false);
+    return;
+  }
+  if (!confirm('Send ' + amt + ' FIRC to\n' + to + '?\n\nThis cannot be undone.')) return;
+  try {
+    if (!unlockIfNeeded()) return;
+    const txid = call('sendtoaddress', [to, amt], true);
+    show('sendMsg', 'Sent! Transaction: ' + txid);
+    $('sendTo').value = ''; $('sendAmt').value = '';
+  } catch (e) { show('sendMsg', 'Not sent: ' + e.message, false); }
+}
+
+function renderRewards() {
+  const all = call('listtransactions', ['*', 200], true);
+  renderHistory(all);
+  const txs = all
+    .filter(t => t.category === 'generate' || t.category === 'immature' || t.category === 'orphan')
+    .reverse().slice(0, 20);
+  const box = $('rewards'); box.innerHTML = '';
+  if (!txs.length) { box.innerHTML = '<div><span>No rewards yet</span></div>'; return; }
+  for (const t of txs) {
+    const row = document.createElement('div');
+    const a = document.createElement('span'); a.textContent = '+' + fmt(t.amount) + ' FIRC';
+    const s = document.createElement('span');
+    if (t.category === 'generate') { s.textContent = 'Ready to spend'; s.style.color = '#4caf50'; }
+    else if (t.category === 'immature') { s.textContent = 'Waiting ' + Math.min(t.confirmations, 100) + '/100'; s.style.color = '#ffb74d'; }
+    else { s.textContent = 'Lost'; s.style.color = '#e57373'; }
+    row.appendChild(a); row.appendChild(s); box.appendChild(row);
+  }
+}
+
+function shortAddr(a) { return a && a.length > 16 ? a.slice(0, 10) + '...' + a.slice(-6) : (a || ''); }
+function renderHistory(all) {
+  const txs = all.filter(t => t.category === 'send' || t.category === 'receive').reverse().slice(0, 30);
+  const box = $('history'); box.innerHTML = '';
+  if (!txs.length) { box.innerHTML = '<div class="tx"><span>No sends or receives yet</span></div>'; return; }
+  for (const t of txs) {
+    const sent = t.category === 'send';
+    const row = document.createElement('div'); row.className = 'tx';
+    const top = document.createElement('div'); top.className = 'txtop';
+    const what = document.createElement('span');
+    what.textContent = (sent ? '\u2191 Sent ' : '\u2193 Received ') + fmt(Math.abs(t.amount)) + ' FIRC';
+    what.style.color = sent ? '#ff8a65' : '#81c784'; what.style.fontWeight = '700';
+    const st = document.createElement('span');
+    st.textContent = t.confirmations > 0 ? 'Confirmed' : (t.confirmations < 0 ? 'Failed' : 'Pending');
+    st.style.color = t.confirmations > 0 ? '#81c784' : '#ffb74d';
+    top.appendChild(what); top.appendChild(st);
+    const sub = document.createElement('div'); sub.className = 'txsub';
+    const when = new Date((t.time || 0) * 1000).toLocaleString();
+    let line = (sent ? 'To ' : 'To your address ') + shortAddr(t.address) + ' \u00b7 ' + when;
+    if (sent && t.fee) line += ' \u00b7 fee ' + fmt(Math.abs(t.fee));
+    sub.textContent = line;
+    row.appendChild(top); row.appendChild(sub);
+    row.onclick = () => { $('explorer').style.display = 'block'; exTx(t.txid); };
+    box.appendChild(row);
+  }
+}
+
+// ---- Explorer ----
+function exAddr(spk) {
+  if (!spk) return '?';
+  if (spk.address) return spk.address;
+  if (spk.addresses && spk.addresses.length) return spk.addresses[0];
+  return spk.type === 'nulldata' ? '(data)' : (spk.type || '?');
+}
+function ago(t) {
+  const s = Math.max(0, Math.floor(Date.now() / 1000 - t));
+  if (s < 60) return s + 's ago'; if (s < 3600) return Math.floor(s / 60) + ' min ago';
+  if (s < 86400) return Math.floor(s / 3600) + ' h ago'; return Math.floor(s / 86400) + ' days ago';
+}
+function esc(t) { return String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+function exCard(title, html) { return '<div class="card"><h2>' + esc(title) + '</h2>' + html + '</div>'; }
+function exRow(k, v, mono) { return '<div class="row"><span>' + esc(k) + '</span><span class="' + (mono ? 'mono' : '') + '" style="text-align:right">' + v + '</span></div>'; }
+function openExplorer() { $('explorer').style.display = 'block'; exHome(); }
+function closeExplorer() { $('explorer').style.display = 'none'; }
+function exHome() {
+  try {
+    const tip = call('getblockcount');
+    let html = '<div class="nodes">';
+    for (let h = tip; h >= Math.max(0, tip - 19); h--) {
+      const b = call('getblock', [call('getblockhash', [h]), 2]);
+      const miner = b.tx && b.tx[0] ? exAddr(b.tx[0].vout[0] && b.tx[0].vout[0].scriptPubKey) : '';
+      html += '<div class="click" onclick="exBlock(' + h + ')"><span>#' + h + ' &middot; ' + b.nTx + ' tx<br><small class="mono" style="color:var(--muted)">' + esc(shortAddr(miner)) + '</small></span><span style="color:var(--muted)">' + ago(b.time) + '</span></div>';
+    }
+    html += '</div>';
+    $('exBody').innerHTML = exCard('Latest blocks (tap one)', html);
+  } catch (e) { $('exBody').innerHTML = exCard('Explorer', esc(e.message || e)); }
+}
+function exBlock(hOrHash) {
+  try {
+    const hash = typeof hOrHash === 'number' ? call('getblockhash', [hOrHash]) : hOrHash;
+    const b = call('getblock', [hash, 2]);
+    let html = exRow('Height', '#' + b.height) + exRow('Time', new Date(b.time * 1000).toLocaleString()) +
+      exRow('Transactions', b.nTx) + exRow('Difficulty', b.difficulty.toPrecision(4)) + exRow('Confirmations', b.confirmations) +
+      exRow('Hash', esc(b.hash), true);
+    let txs = '<div class="nodes">';
+    for (const t of b.tx) {
+      const total = t.vout.reduce((a, o) => a + o.value, 0);
+      const coinbase = t.vin[0] && t.vin[0].coinbase !== undefined;
+      txs += '<div class="click" onclick="exTx(\'' + t.txid + '\',\'' + b.hash + '\')"><span class="mono">' + t.txid.slice(0, 16) + '&hellip;<br><small style="color:var(--muted)">' + (coinbase ? 'Mining reward' : 'Transfer') + '</small></span><span>' + fmt(total) + ' FIRC</span></div>';
+    }
+    txs += '</div>';
+    let nav = '<div style="display:flex;gap:8px">';
+    if (b.height > 0) nav += '<button class="alt" onclick="exBlock(' + (b.height - 1) + ')">&larr; Older</button>';
+    if (b.nextblockhash) nav += '<button class="alt" onclick="exBlock(' + (b.height + 1) + ')">Newer &rarr;</button>';
+    nav += '</div><button class="alt" onclick="exHome()">Latest blocks</button>';
+    $('exBody').innerHTML = exCard('Block #' + b.height, html) + exCard('Transactions (tap one)', txs) + nav;
+    $('explorer').scrollTop = 0;
+  } catch (e) { show('exMsg', 'Block not found: ' + (e.message || e), false); }
+}
+function exTx(txid, blockhash) {
+  try {
+    const t = blockhash ? call('getrawtransaction', [txid, true, blockhash]) : call('getrawtransaction', [txid, true]);
+    let html = exRow('Status', t.confirmations ? 'Confirmed (' + t.confirmations + ')' : 'Waiting for a block') +
+      (t.blocktime ? exRow('Time', new Date(t.blocktime * 1000).toLocaleString()) : '') +
+      exRow('Transaction ID', esc(t.txid), true);
+    if (t.blockhash) html += '<button class="alt" onclick="exBlock(\'' + t.blockhash + '\')">Open its block</button>';
+    let from = '<div class="nodes">';
+    for (const i of t.vin) {
+      if (i.coinbase !== undefined) { from += '<div><span>New coins (mining reward)</span><span></span></div>'; continue; }
+      let who = i.txid.slice(0, 12) + '&hellip;:' + i.vout, amt = '';
+      try { const p = call('getrawtransaction', [i.txid, true]).vout[i.vout]; who = esc(shortAddr(exAddr(p.scriptPubKey))); amt = fmt(p.value) + ' FIRC'; } catch (e) {}
+      from += '<div class="click" onclick="exTx(\'' + i.txid + '\')"><span class="mono">' + who + '</span><span>' + amt + '</span></div>';
+    }
+    from += '</div>';
+    let to = '<div class="nodes">';
+    for (const o of t.vout) to += '<div><span class="mono">' + esc(shortAddr(exAddr(o.scriptPubKey))) + '</span><span>' + fmt(o.value) + ' FIRC</span></div>';
+    to += '</div>';
+    $('exBody').innerHTML = exCard('Transaction', html) + exCard('From', from) + exCard('To', to) + '<button class="alt" onclick="exHome()">Latest blocks</button>';
+    $('explorer').scrollTop = 0;
+  } catch (e) { show('exMsg', 'Transaction not found yet. If it is new, wait a minute (the explorer is still indexing). ' + (e.message || ''), false); }
+}
+function exSearch() {
+  const q = $('exSearch').value.trim();
+  $('exMsg').style.display = 'none';
+  if (!q) return;
+  if (/^\d+$/.test(q)) return exBlock(parseInt(q, 10));
+  if (/^[0-9a-fA-F]{64}$/.test(q)) {
+    try { call('getblockheader', [q]); return exBlock(q); } catch (e) {}
+    return exTx(q);
+  }
+  show('exMsg', 'Type a block number (like 12), or paste a 64-character block hash or transaction ID.', false);
+}
+
+// ---- QR scanning ----
+let scanStream = null, scanTimer = null;
+function handleQr(text) {
+  text = (text || '').trim();
+  let addr = text, amount = '';
+  const m = text.match(/^[a-z]+:(.*)$/i);
+  if (m) addr = m[1];
+  const qi = addr.indexOf('?');
+  if (qi >= 0) {
+    const params = addr.slice(qi + 1).split('&');
+    addr = addr.slice(0, qi);
+    for (const p of params) { const kv = p.split('='); if (kv[0].toLowerCase() === 'amount') amount = decodeURIComponent(kv[1] || ''); }
+  }
+  addr = addr.replace(/^\/\//, '').trim();
+  let valid = false;
+  try { valid = call('validateaddress', [addr]).isvalid; } catch (e) {}
+  if (!valid) { show('sendMsg', 'That QR code is not a FierCoin address: ' + text.slice(0, 60), false); return; }
+  $('sendTo').value = addr;
+  if (amount) $('sendAmt').value = amount;
+  show('sendMsg', amount ? 'Scanned! Address and amount filled in. Check them, then tap Send.' : 'Scanned! Now type the amount and tap Send.');
+}
+function startScan() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    show('sendMsg', 'The camera is not available here. Use "scan a picture" instead.', false); return;
+  }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+    .then(stream => {
+      scanStream = stream;
+      const v = $('scanVideo'); v.srcObject = stream; v.play();
+      $('scanner').style.display = 'flex';
+      scanTimer = setInterval(scanFrame, 250);
+    })
+    .catch(e => show('sendMsg', 'Could not open the camera (' + (e.name || e) + '). Allow camera access for FierCoin in your phone Settings, or use "scan a picture".', false));
+}
+function scanFrame() {
+  const v = $('scanVideo');
+  if (!v.videoWidth) return;
+  const w = Math.min(640, v.videoWidth), h = Math.round(v.videoHeight * w / v.videoWidth);
+  const c = $('scanCanvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d'); ctx.drawImage(v, 0, 0, w, h);
+  const code = jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'attemptBoth' });
+  if (code && code.data) { stopScan(); handleQr(code.data); }
+}
+function stopScan() {
+  if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
+  if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+  $('scanner').style.display = 'none';
+}
+function scanPicture(input) {
+  const f = input.files && input.files[0]; input.value = '';
+  if (!f) return;
+  const img = new Image();
+  img.onload = () => {
+    const scale = Math.min(1, 1200 / Math.max(img.width, img.height));
+    const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+    const c = $('scanCanvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+    const code = jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'attemptBoth' });
+    URL.revokeObjectURL(img.src);
+    if (code && code.data) handleQr(code.data); else show('sendMsg', 'No QR code found in that picture. Try a clearer, closer one.', false);
+  };
+  img.onerror = () => show('sendMsg', 'Could not open that picture.', false);
+  img.src = URL.createObjectURL(f);
+}
+
+function renderNodes() {
+  const list = Fier.nodes().split(',').filter(Boolean);
+  $('nodes').innerHTML = '';
+  for (const n of list) {
+    const row = document.createElement('div');
+    const label = document.createElement('span'); label.textContent = n;
+    const btn = document.createElement('button'); btn.className = 'alt'; btn.textContent = 'Remove';
+    btn.onclick = () => { Fier.removeNode(n); renderNodes(); };
+    row.appendChild(label); row.appendChild(btn); $('nodes').appendChild(row);
+  }
+}
+function addNode() {
+  const ip = $('nodeIp').value.trim();
+  if (!ip) return;
+  Fier.addNode(ip); $('nodeIp').value = ''; renderNodes();
+}
+
+function encryptWallet() {
+  const info = call('getwalletinfo', [], true);
+  if (info.unlocked_until !== undefined) { show('safeMsg', 'Your wallet already has a password.'); return; }
+  const p1 = prompt('Choose a wallet password. WRITE IT DOWN: if you forget it, your coins are lost.');
+  if (!p1) return;
+  const p2 = prompt('Type the password again');
+  if (p1 !== p2) { show('safeMsg', 'Passwords did not match. Nothing changed.', false); return; }
+  try { call('encryptwallet', [p1], true); show('safeMsg', 'Password set. You will need it to send coins. Now make a new backup.'); }
+  catch (e) { show('safeMsg', e.message, false); }
+}
+function renderWalletPicker() {
+  let names = [];
+  try { names = call('listwalletdir').wallets.map(w => w.name).filter(n => n); } catch (e) { names = [W()]; }
+  if (names.indexOf(W()) < 0) names.push(W());
+  const sel = $('walletPick'); sel.innerHTML = '';
+  for (const n of names) {
+    const o = document.createElement('option'); o.value = n;
+    o.textContent = n === 'phone' ? 'This phone (original)' : (n.indexOf('restored-') === 0 ? 'Restored backup ' + n.slice(9) : n);
+    sel.appendChild(o);
+  }
+  sel.value = W();
+}
+function switchWallet(name) {
+  const old = W();
+  Fier.setActiveWallet(name);
+  try { ensureWallet(); refresh(); show('safeMsg', 'Now showing: ' + $('walletPick').selectedOptions[0].textContent + '. If mining, tap Stop then Start mining so new coins go to this wallet.'); }
+  catch (e) { Fier.setActiveWallet(old); renderWalletPicker(); show('safeMsg', 'Could not open that wallet: ' + (e.message || e), false); }
+}
+function restoreBackup(input) {
+  const f = input.files && input.files[0]; input.value = '';
+  if (!f) return;
+  show('safeMsg', 'Restoring ' + f.name + '...');
+  const r = new FileReader();
+  r.onload = () => {
+    const b64 = String(r.result).split(',')[1] || '';
+    const name = Fier.restoreWallet(b64);
+    if (name.indexOf('ERROR') === 0) { show('safeMsg', name.slice(7), false); return; }
+    try {
+      call('loadwallet', [name, true]);
+    } catch (e) { show('safeMsg', 'Could not open the backup: ' + (e.message || e), false); return; }
+    Fier.setActiveWallet(name);
+    try { ensureWallet(); refresh(); } catch (e) {}
+    show('safeMsg', 'Restored! Your backup wallet is now shown above (pick "This phone (original)" in the Wallet list to switch back). Coins can take a minute to appear while it checks the blockchain. Coins from blocks that were Lost do not come back.');
+  };
+  r.onerror = () => show('safeMsg', 'Could not read that file.', false);
+  r.readAsDataURL(f);
+}
+function backup() { show('safeMsg', Fier.backup()); }
+
+function stopNode() {
+  if (!confirm('Stop FierCoin? Mining will stop too.')) return;
+  ready = false; Fier.stop();
+  $('app').classList.add('hidden'); $('startCard').classList.remove('hidden');
+  $('startBtn').disabled = false; show('startMsg', 'FierCoin stopped.');
+}
+
+setupThreads();
+if (Fier.running()) { $('startBtn').disabled = true; waitForNode(0); }
+</script>
+</body>
+</html>
