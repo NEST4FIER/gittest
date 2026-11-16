@@ -126,6 +126,16 @@ Bridge(MainActivity a) {
     }
 
     @JavascriptInterface
+    public void share(String text) {
+        Intent send = new Intent(Intent.ACTION_SEND);
+        send.setType("text/plain");
+        send.putExtra(Intent.EXTRA_TEXT, text);
+        Intent chooser = Intent.createChooser(send, "Share your FierCoin address");
+        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        a.startActivity(chooser);
+    }
+
+    @JavascriptInterface
     public void batterySettings() {
         PowerManager pm = (PowerManager) a.getSystemService(Context.POWER_SERVICE);
             try {
