@@ -134,11 +134,10 @@
   </div>
 
   <div class="card" id="setupCard">
-    <h2>Get set up (3 steps)</h2>
+    <h2>Keep your coins safe (2 steps)</h2>
     <div class="check">
-      <div id="stepConnect" onclick="openConnect()"><div class="box">1</div><span>Connect to your laptop or a friend</span></div>
-      <div id="stepPass" onclick="encryptWallet(true)"><div class="box">2</div><span>Set a wallet password</span></div>
-      <div id="stepBackup" onclick="backup(true)"><div class="box">3</div><span>Back up your wallet</span></div>
+      <div id="stepPass" onclick="encryptWallet(true)"><div class="box">1</div><span>Set a wallet password</span></div>
+      <div id="stepBackup" onclick="backup(true)"><div class="box">2</div><span>Back up your wallet</span></div>
     </div>
     <div class="msg" id="setupMsg"></div>
   </div>
@@ -245,7 +244,7 @@
     <p><b>How do I earn FIRC?</b><br>Tap the big Mine button on Home. Each block you find pays 50 FIRC.</p>
     <p><b>Why "waiting"?</b><br>Mined coins must wait 100 blocks (about 4 hours) before you can spend them. Every mined coin works this way.</p>
     <p><b>What does "lost" mean?</b><br>Another computer found the same block first, so yours didn't count. That's normal.</p>
-    <p><b>Why connect?</b><br>Everyone must share one blockchain. Coins mined while not connected can be thrown away when you reconnect.</p>
+    <p><b>Do I need to connect?</b><br>No, you can mine solo. Connecting (in More) lets you share one blockchain with friends so you can send coins to each other. Tip: if you mine solo for a while and connect later, the side with more mining wins, and the other side's newest blocks show as Lost.</p>
     <p><b>Updating the app</b><br>Back up first, then install the new version and tap Update. Never uninstall first: that deletes the wallet.</p>
   </div></details>
 </div>
@@ -389,7 +388,7 @@ function refresh() {
     peerCount = call('getconnectioncount');
     const pill = $('pill');
     if (peerCount > 0) { pill.className = 'pill ok'; pill.textContent = '● Connected'; }
-    else { pill.className = 'pill warn'; pill.textContent = '● Not connected'; }
+    else { pill.className = 'pill'; pill.textContent = '⛏ Solo'; }
   } catch (e) { $('pill').className = 'pill'; $('pill').textContent = 'Starting…'; }
 
   try { renderMining(blocks); } catch (e) {}
@@ -492,7 +491,7 @@ function renderMining(blocks) {
   if (mining) {
     btn.className = 'minebtn on';
     btn.innerHTML = '&#9935; Mining&hellip;<small>Tap to stop</small>';
-    $('mineStatus').textContent = peerCount > 0 ? 'Your phone is looking for the next block.' : 'Mining, but NOT connected. Coins found now may be lost. Connect in More.';
+    $('mineStatus').textContent = 'Your phone is looking for the next block.';
   } else {
     btn.className = 'minebtn';
     btn.innerHTML = '&#9935; Start mining<small>Tap to earn FIRC</small>';
@@ -521,7 +520,7 @@ function toggleMining() {
 function renderSetup() {
   let encrypted = false;
   try { encrypted = call('getwalletinfo', [], true).unlocked_until !== undefined; } catch (e) {}
-  const steps = [['stepConnect', peerCount > 0], ['stepPass', encrypted], ['stepBackup', localStorage.getItem('backedUp:' + W()) === '1']];
+  const steps = [['stepPass', encrypted], ['stepBackup', localStorage.getItem('backedUp:' + W()) === '1']];
   let all = true;
   for (const [id, done] of steps) { $(id).classList.toggle('done', done); $(id).querySelector('.box').textContent = done ? '✓' : String(steps.findIndex(s => s[0] === id) + 1); all = all && done; }
   $('setupCard').classList.toggle('hidden', all);
@@ -578,7 +577,7 @@ function renderNodes() {
     btn.onclick = () => { Fier.removeNode(n); renderNodes(); };
     row.appendChild(label); row.appendChild(btn); $('nodes').appendChild(row);
   }
-  $('connInfo').textContent = peerCount > 0 ? '✅ Connected to ' + peerCount + (peerCount === 1 ? ' computer.' : ' computers.') : 'Not connected yet. After you add an address it can take up to a minute.';
+  $('connInfo').textContent = peerCount > 0 ? '✅ Connected to ' + peerCount + (peerCount === 1 ? ' computer.' : ' computers.') : 'Mining solo. Add an address above to connect (it can take up to a minute).';
 }
 function addNode() {
   const ip = $('nodeIp').value.trim();
