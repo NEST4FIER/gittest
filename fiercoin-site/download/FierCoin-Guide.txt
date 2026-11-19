@@ -1,0 +1,129 @@
+=====================================================
+  FierCoin (FIRC) - Your Guide
+  "Regaining our democracy in the USA"
+=====================================================
+
+WHAT FIERCOIN IS
+----------------
+- Its own blockchain, made from Litecoin's code (just like Litecoin).
+- Mined with your computer's processor using "Scrypt", the same mining method as Litecoin.
+- 84,000,000 coins total, ever. That's the same as Litecoin.
+- Each block pays the miner 50 FIRC. The reward is cut in half every 840,000 blocks (about every 4 years).
+- A new block is found about every 2.5 minutes. Difficulty adjusts every hour, so it stays steady when miners come and go.
+- Your wallet addresses start with "firc1" (or "F" for older-style ones).
+
+
+STEP 1 - INSTALL
+----------------
+1. Double-click "fiercoin-win64-setup.exe".
+2. Windows may show "Windows protected your PC". This happens because the app is new and not "signed".
+   Click "More info", then "Run anyway".
+3. Click Next until it finishes, then open "FierCoin Core" from the Start menu.
+4. On first launch, keep the default data folder and click OK.
+5. Allow it through the Windows Firewall if asked, so other people's computers can connect to yours.
+
+
+STEP 2 - MAKE YOUR WALLET SAFE (do this first!)
+------------------------------------------------
+1. Settings > Encrypt Wallet. Choose a strong password and WRITE IT DOWN on paper.
+2. File > Backup Wallet. Save the backup to a USB stick. Keep it somewhere safe.
+   (If your PC dies and you have no backup, your coins are gone forever.)
+3. Never type your password or share your wallet file on any website or in any chat.
+
+
+STEP 3 - GET YOUR ADDRESS
+-------------------------
+1. Click the "Receive" tab.
+2. Click "Create new receiving address".
+3. Click "Copy Address". It looks like:  firc1q...
+
+
+STEP 4 - START MINING
+---------------------
+1. Click Window > Console.
+2. Type this (paste YOUR address at the end) and press Enter:
+
+      setgenerate true 2 firc1qYOURADDRESSHERE
+
+   The "2" means it uses 2 processor threads. Use a bigger number to mine faster
+   (your PC will get warmer and slower). Try 2 to 4.
+
+3. To check how it's going, type:
+
+      getgenerate
+
+   "hashespersec" is your speed. "blocksfound" counts your wins.
+
+4. To stop mining, type:
+
+      setgenerate false
+
+Note: freshly mined coins are "Immature" until 100 more blocks are found (about 4 hours).
+After that you can spend them. This is the same rule as Litecoin.
+
+
+MINE AUTOMATICALLY EVERY TIME THE APP OPENS (optional)
+------------------------------------------------------
+1. Settings > Options > "Open Configuration File".
+2. Add these 3 lines (with your address), then save and restart FierCoin:
+
+      gen=1
+      genaddress=firc1qYOURADDRESSHERE
+      genproclimit=2
+
+
+STEP 5 - KEEP THE NETWORK ALIVE
+-------------------------------
+At the start, YOUR computer is the whole FierCoin network.
+- If your computer is off, no new blocks are made. Nothing is lost; it continues when you turn it back on.
+- The more computers run FierCoin, the stronger and safer it gets.
+
+
+LETTING FRIENDS JOIN
+--------------------
+FierCoin has no "phone book" of computers yet, so friends have to be told where to find yours.
+
+On YOUR side (one time):
+1. Find your public IP address: search "what is my IP" on Google.
+2. In your internet router's settings, "port forward" TCP port 29333 to your PC.
+   (Search "port forwarding" + your router brand for steps.)
+
+On your FRIEND's side:
+1. They install FierCoin the same way.
+2. Settings > Options > "Open Configuration File", then add this line, using YOUR IP:
+
+      addnode=YOUR.IP.ADDRESS.HERE:29333
+
+3. Save and restart FierCoin. Their wallet will download the blockchain from you.
+
+
+SENDING AND RECEIVING
+---------------------
+- To get paid: give people your "firc1..." address (Receive tab).
+- To pay someone: Send tab, paste their address and the amount, then click Send.
+
+
+HONEST WARNINGS
+---------------
+- FIRC has no price until people choose to trade it. Nobody can promise it will be worth $1.
+- It is not on exchanges, in MetaMask, or on Uniswap. It has its own wallet (this app).
+- Litecoin mining machines ("ASICs") also use Scrypt. If someone points one at FierCoin, they
+  could win most blocks. Hourly difficulty adjustment keeps the network working if they leave.
+- Some antivirus programs flag ANY program that can mine. If yours does, it's because of the miner.
+- Keep your wallet backup and password safe. Nobody, including me, can recover lost coins.
+
+
+TECH DETAILS (for anyone who asks)
+---------------------------------
+Based on:            Litecoin Core 0.21.4 (MIT license)
+Algorithm:           Scrypt (N=1024, r=1, p=1), the same as Litecoin
+Block time:          2.5 minutes
+Difficulty retarget: every 24 blocks (1 hour)
+Block reward:        50 FIRC, halving every 840,000 blocks
+Max supply:          84,000,000 FIRC
+Coinbase maturity:   100 blocks
+P2P port:            29333      RPC port: 29332
+Address formats:     firc1... (bech32), F... (legacy), f... (script)
+Genesis message:     "FierCoin 13/Nov/2026 Regaining our democracy in the USA"
+Genesis block hash:  71be9b5072981f23c2eeac18ffc20d99cabc31b82ff7cf23353c9ef6cae5a2b3
+Built-in miner:      setgenerate / getgenerate commands, or gen=1 in the config file
