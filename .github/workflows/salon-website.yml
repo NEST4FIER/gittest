@@ -1,5 +1,5 @@
-# Publishes only the salon-website folder to GitHub Pages
-# (nothing else in this repository goes online).
+# Publishes the salon website (at the site's main address) and the FierCoin
+# website (at /fiercoin/) to GitHub Pages. Nothing else in this repository goes online.
 # Runs every time the salon website changes, or by hand from the Actions tab.
 name: Publish salon website
 
@@ -8,6 +8,7 @@ on:
     branches: [claude/salon-work-website-95l1m7]
     paths:
       - "salon-website/**"
+      - "fiercoin-site/**"
       - ".github/workflows/salon-website.yml"
   workflow_dispatch:
 
@@ -29,8 +30,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - name: Put both websites together
+        run: |
+          mkdir -p _site
+          cp -r salon-website/. _site/
+          mkdir -p _site/fiercoin
+          cp -r fiercoin-site/. _site/fiercoin/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: salon-website
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

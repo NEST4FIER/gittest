@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FierCoin (FIRC): mine it on your phone or PC</title>
+<meta name="description" content="FierCoin (FIRC) is a coin with its own blockchain, mined like Litecoin. Free wallet and miner for Windows and Android.">
+<link rel="icon" href="logo.png">
+<style>
+  :root { --bg:#16110f; --card:#231a16; --line:#3a2b24; --text:#fff4ea; --muted:#c9b3a3; --fire:#ff8f00; --red:#d84315; --ok:#81c784; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:17px/1.55 system-ui, -apple-system, Segoe UI, sans-serif; }
+  a { color:var(--fire); }
+  .wrap { max-width:980px; margin:0 auto; padding:0 16px; }
+  header { padding:56px 0 36px; text-align:center; background:radial-gradient(ellipse at top, #3a1f12 0%, var(--bg) 70%); }
+  header img { width:110px; height:110px; }
+  h1 { font-size:44px; margin:12px 0 6px; letter-spacing:-1px; }
+  .tag { color:var(--muted); font-size:20px; margin:0 auto 26px; max-width:620px; }
+  .btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .btn { display:inline-flex; align-items:center; gap:10px; padding:16px 22px; border-radius:14px; font-weight:800; font-size:18px; text-decoration:none; color:#fff; background:linear-gradient(180deg,var(--fire),var(--red)); }
+  .btn.alt { background:#3a2b24; }
+  .btn small { display:block; font-weight:600; font-size:13px; opacity:.85; }
+  section { padding:34px 0; border-top:1px solid var(--line); }
+  h2 { font-size:28px; margin:0 0 18px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; }
+  .card h3 { margin:0 0 6px; color:var(--fire); font-size:19px; }
+  .big { font-size:30px; font-weight:800; }
+  .muted { color:var(--muted); }
+  ol { padding-left:22px; } ol li { margin-bottom:8px; }
+  code { background:#120d0b; border:1px solid var(--line); border-radius:6px; padding:2px 6px; font-size:15px; word-break:break-all; }
+  .dl { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  .warn { border-color:#7a4a1a; background:#2a1d12; }
+  footer { padding:30px 0 50px; color:var(--muted); font-size:15px; text-align:center; border-top:1px solid var(--line); }
+  @media (max-width:560px) { h1 { font-size:34px; } .tag { font-size:17px; } .btn { width:100%; justify-content:center; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <img src="logo.png" alt="FierCoin logo">
+    <h1>FierCoin</h1>
+    <p class="tag">A coin with its own blockchain, mined like Litecoin. Mine it free on your phone or computer. Built for regaining our democracy in the USA.</p>
+    <div class="btns">
+      <a class="btn" href="download/FierCoin-Android.apk" download><span>&#128241;</span><span>Android app<small>5.6 MB &middot; Android 8+</small></span></a>
+      <a class="btn" href="download/FierCoin-Setup-Windows.exe" download><span>&#128187;</span><span>Windows wallet<small>19.6 MB &middot; Windows 10/11</small></span></a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section>
+  <h2>The coin</h2>
+  <div class="grid">
+    <div class="card"><h3>Total ever</h3><div class="big">84,000,000</div><div class="muted">FIRC: the same total as Litecoin</div></div>
+    <div class="card"><h3>Reward</h3><div class="big">50 FIRC</div><div class="muted">per block found, halving about every 4 years</div></div>
+    <div class="card"><h3>New block</h3><div class="big">~2.5 min</div><div class="muted">difficulty adjusts every hour</div></div>
+    <div class="card"><h3>Mining</h3><div class="big">Scrypt</div><div class="muted">the same method as Litecoin; works on phones and PCs</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Start mining on your phone</h2>
+  <ol>
+    <li>Tap <b>Android app</b> above and open the download.</li>
+    <li>If Android asks, allow installs from this source, then tap <b>Install</b>. (It isn't from the Play Store, so you may see a warning. Tap <b>More details &rarr; Install anyway</b>.)</li>
+    <li>Open <b>FierCoin</b>. It starts by itself.</li>
+    <li>Go to the <b>Mining</b> tab and tap the big button. That's it.</li>
+    <li>On the <b>Balance</b> tab, follow the 2 safety steps: set a password and make a backup.</li>
+  </ol>
+</section>
+
+<section>
+  <h2>Start mining on Windows</h2>
+  <ol>
+    <li>Tap <b>Windows wallet</b> above and run it. If Windows warns you, click <b>More info &rarr; Run anyway</b>.</li>
+    <li>Open <b>FierCoin Core</b> from the Start menu.</li>
+    <li>Go to <b>Receive</b> &rarr; <b>Create new receiving address</b> &rarr; <b>Copy</b>.</li>
+    <li>Go to <b>Window &rarr; Console</b> and type: <code>setgenerate true 2 YOUR_ADDRESS</code></li>
+  </ol>
+  <p class="muted">Full steps are in the <a href="download/FierCoin-Guide.txt">FierCoin guide</a>.</p>
+</section>
+
+<section>
+  <h2>Mine together</h2>
+  <p>You can mine solo. To send coins to each other, you and your friends must share one blockchain:</p>
+  <ul>
+    <li><b>Phone:</b> More &rarr; Connect to other computers &rarr; type the other computer's address.</li>
+    <li><b>PC:</b> Settings &rarr; Options &rarr; Open Configuration File &rarr; add <code>addnode=ADDRESS:29333</code>, then restart FierCoin.</li>
+  </ul>
+  <p class="muted">A public FierCoin meeting-point server and website explorer are coming soon. Their address will be listed here.</p>
+</section>
+
+<section>
+  <h2>All downloads</h2>
+  <div class="grid">
+    <div class="card dl"><div><h3>Android app</h3><span class="muted">Wallet + miner + explorer</span></div><a class="btn alt" href="download/FierCoin-Android.apk" download>Download</a></div>
+    <div class="card dl"><div><h3>Windows wallet</h3><span class="muted">Wallet + built-in miner</span></div><a class="btn alt" href="download/FierCoin-Setup-Windows.exe" download>Download</a></div>
+    <div class="card dl"><div><h3>Explorer for PC</h3><span class="muted">See blocks &amp; addresses in your browser</span></div><a class="btn alt" href="download/FierCoin-Explorer.exe" download>Download</a></div>
+    <div class="card dl"><div><h3>Guide</h3><span class="muted">Step-by-step instructions</span></div><a class="btn alt" href="download/FierCoin-Guide.txt">Open</a></div>
+  </div>
+  <p class="muted">File fingerprints (SHA-256), so you can check your download: <a href="download/SHA256SUMS.txt">SHA256SUMS.txt</a></p>
+</section>
+
+<section>
+  <div class="card warn">
+    <h3>Please read</h3>
+    <ul>
+      <li><b>No price yet.</b> FIRC isn't sold on any exchange. It's only worth what people agree to trade it for. Nobody can promise it will gain value.</li>
+      <li><b>Keep your backup and password safe.</b> If you lose them, nobody can get your coins back.</li>
+      <li><b>Never</b> give your wallet password or backup file to anyone who asks for it, including anyone saying they're from FierCoin.</li>
+      <li>Some antivirus programs flag any app that can mine. That's expected for mining software.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    FierCoin is open source and built from Litecoin Core 0.21.4 (MIT license).
+    Source code: <a href="https://github.com/NEST4FIER/gittest/tree/claude/salon-work-website-95l1m7/fiercoin-release">github.com/NEST4FIER/gittest</a><br>
+    Genesis message: "FierCoin 13/Nov/2026 Regaining our democracy in the USA"
+  </div>
+</footer>
+</body>
+</html>
