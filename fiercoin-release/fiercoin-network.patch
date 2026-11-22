@@ -1,0 +1,92 @@
+diff --git a/contrib/seeds/fiercoin-set-seeds.sh b/contrib/seeds/fiercoin-set-seeds.sh
+new file mode 100755
+index 0000000..7aad334
+--- /dev/null
++++ b/contrib/seeds/fiercoin-set-seeds.sh
+@@ -0,0 +1,36 @@
++#!/bin/bash
++# FierCoin: build the always-on seed nodes into the software, the way Bitcoin ships
++# its fixed seed list. New wallets use these to find the one shared FierCoin network;
++# after that they learn about other nodes from each other.
++#
++#   contrib/seeds/fiercoin-set-seeds.sh 203.0.113.10 198.51.100.7
++#
++# Each address is a public IPv4/IPv6 address of an always-on FierCoin node (port 29333).
++set -euo pipefail
++cd "$(dirname "$0")"
++[ $# -ge 1 ] || { echo "usage: $0 IP [IP...]"; exit 1; }
++: > nodes_main.txt
++for ip in "$@"; do
++  case "$ip" in
++    *:*:*) echo "[$ip]:29333" >> nodes_main.txt ;;   # IPv6
++    *)     echo "$ip:29333"   >> nodes_main.txt ;;
++  esac
++done
++: > nodes_test.txt
++python3 generate-seeds.py . > ../../src/chainparamsseeds.h
++# Use the list on the main network (it was switched off while FierCoin had no seed nodes).
++python3 - <<'EOF'
++p = '../../src/chainparams.cpp'
++s = open(p, encoding='utf-8').read()
++main_start = s.index('class CMainParams')
++main_end = s.index('class CTestNetParams')
++block = s[main_start:main_end]
++off = '        vFixedSeeds.clear();\n'
++on = '        vFixedSeeds = std::vector<uint8_t>(std::begin(chainparams_seed_main), std::end(chainparams_seed_main));\n'
++if off in block:
++    block = block.replace(off, on, 1)
++elif on not in block:
++    raise SystemExit('could not find the mainnet fixed seed line in chainparams.cpp')
++open(p, 'w', encoding='utf-8').write(s[:main_start] + block + s[main_end:])
++EOF
++echo "Seed list built in:"; cat nodes_main.txt
+diff --git a/src/net.cpp b/src/net.cpp
+index 1a0bee8..3906638 100644
+--- a/src/net.cpp
++++ b/src/net.cpp
+@@ -1937,14 +1937,40 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
+         // Note that we only do this if we started with an empty peers.dat,
+         // (in which case we will query DNS seeds immediately) *and* the DNS
+         // seeds have not returned any results.
+-        if (addrman.size() == 0 && (GetTime() - nStart > 60)) {
+-            static bool done = false;
+-            if (!done) {
+-                LogPrintf("Adding fixed seed nodes as DNS doesn't seem to be available.\n");
++        //
++        // FierCoin: while the network is young it may have no DNS seeds, only the
++        // built-in (fixed) seed nodes. So when there are no DNS seeds we use the
++        // fixed seeds after 2 seconds instead of 60, and we add them again whenever
++        // this node has had no outbound connection for a minute (for example when
++        // its address book only holds stale addresses). That way every new wallet
++        // finds the one shared FierCoin network by itself.
++        {
++            static bool added_once = false;
++            static int64_t last_added = 0;
++            static int64_t alone_since = GetTime();
++            const bool no_dns_seeds = Params().DNSSeeds().empty();
++            const int64_t now = GetTime();
++            bool has_outbound = false;
++            {
++                LOCK(cs_vNodes);
++                for (const CNode* pnode : vNodes) {
++                    if (!pnode->IsInboundConn() && pnode->fSuccessfullyConnected) {
++                        has_outbound = true;
++                        break;
++                    }
++                }
++            }
++            if (has_outbound) alone_since = now;
++            bool add_now = false;
++            if (!added_once && addrman.size() == 0 && (now - nStart > (no_dns_seeds ? 2 : 60))) add_now = true;
++            if (no_dns_seeds && !has_outbound && now - alone_since > 60 && now - last_added > 300) add_now = true;
++            if (add_now && !Params().FixedSeeds().empty()) {
++                LogPrintf("Adding fixed seed nodes%s.\n", no_dns_seeds ? " (no DNS seeds configured)" : " as DNS doesn't seem to be available");
+                 CNetAddr local;
+                 local.SetInternal("fixedseeds");
+                 addrman.Add(ConvertSeeds(Params().FixedSeeds()), local);
+-                done = true;
++                added_once = true;
++                last_added = now;
+             }
+         }
+ 
