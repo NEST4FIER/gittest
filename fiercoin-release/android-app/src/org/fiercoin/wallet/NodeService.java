@@ -86,6 +86,9 @@ public class NodeService extends Service {
         cmd.add("-printtoconsole=0");
         cmd.add("-fallbackfee=0.0001");
         cmd.add("-txindex=1"); // lets the in-app explorer look up any transaction
+        // Join the one shared FierCoin network, like Bitcoin wallets do: stay connected to the
+        // always-on seed node(s) and learn about other FierCoin computers from them.
+        for (String seed : Node.SEEDS) cmd.add("-addnode=" + seed);
         for (String node : Node.nodes(this)) cmd.add("-addnode=" + node);
         try {
             ProcessBuilder pb = new ProcessBuilder(cmd);

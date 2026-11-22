@@ -208,7 +208,7 @@
 <div class="screen" id="scr-more">
 
   <details id="dConnect"><summary>&#128279; Connect to other computers</summary><div class="inner">
-    <div class="note" style="margin-top:0">FierCoin computers must be connected to share one blockchain. Type the address of your laptop (like <b>192.168.1.20</b>), a friend, or your FierCoin server.</div>
+    <div class="note" style="margin-top:0">FierCoin connects to the worldwide FierCoin network by itself, like Bitcoin. You don't need to do anything here. Optional: add another FierCoin computer's address (for example your laptop, like <b>192.168.1.20</b>).</div>
     <input id="nodeIp" placeholder="IP address" autocomplete="off" autocapitalize="off" inputmode="url">
     <button onclick="addNode()">Connect</button>
     <div class="nodes" id="nodes"></div>
@@ -218,6 +218,7 @@
   <details><summary>&#128269; Explorer</summary><div class="inner">
     <div class="note" style="margin-top:0">Look at every block and transaction on the FierCoin blockchain.</div>
     <button class="alt" onclick="openExplorer()">Open explorer</button>
+    <button class="alt" onclick="Fier.openUrl('http://68.183.155.121/')">Open the public explorer website</button>
   </div></details>
 
   <details id="dSafe"><summary>&#128274; Keep your coins safe</summary><div class="inner">
@@ -244,7 +245,7 @@
     <p><b>How do I earn FIRC?</b><br>Tap the big Mine button on Home. Each block you find pays 50 FIRC.</p>
     <p><b>Why "waiting"?</b><br>Mined coins must wait 100 blocks (about 4 hours) before you can spend them. Every mined coin works this way.</p>
     <p><b>What does "lost" mean?</b><br>Another computer found the same block first, so yours didn't count. That's normal.</p>
-    <p><b>Do I need to connect?</b><br>No, you can mine solo. Connecting (in More) lets you share one blockchain with friends so you can send coins to each other. Tip: if you mine solo for a while and connect later, the side with more mining wins, and the other side's newest blocks show as Lost.</p>
+    <p><b>How does the network work?</b><br>Like Bitcoin: your phone connects to other FierCoin computers by itself, and everyone shares one blockchain. That's what lets you send coins to anyone, anywhere. Top right shows how many computers you're connected to.</p>
     <p><b>Updating the app</b><br>Back up first, then install the new version and tap Update. Never uninstall first: that deletes the wallet.</p>
   </div></details>
 </div>
@@ -387,8 +388,8 @@ function refresh() {
     blocks = call('getblockchaininfo').blocks;
     peerCount = call('getconnectioncount');
     const pill = $('pill');
-    if (peerCount > 0) { pill.className = 'pill ok'; pill.textContent = '● Connected'; }
-    else { pill.className = 'pill'; pill.textContent = '⛏ Solo'; }
+    if (peerCount > 0) { pill.className = 'pill ok'; pill.textContent = '● Connected (' + peerCount + ')'; }
+    else { pill.className = 'pill'; pill.textContent = 'Connecting…'; }
   } catch (e) { $('pill').className = 'pill'; $('pill').textContent = 'Starting…'; }
 
   try { renderMining(blocks); } catch (e) {}
@@ -577,7 +578,7 @@ function renderNodes() {
     btn.onclick = () => { Fier.removeNode(n); renderNodes(); };
     row.appendChild(label); row.appendChild(btn); $('nodes').appendChild(row);
   }
-  $('connInfo').textContent = peerCount > 0 ? '✅ Connected to ' + peerCount + (peerCount === 1 ? ' computer.' : ' computers.') : 'Mining solo. Add an address above to connect (it can take up to a minute).';
+  $('connInfo').textContent = peerCount > 0 ? '✅ Connected to ' + peerCount + (peerCount === 1 ? ' computer.' : ' computers.') : 'Connecting to the FierCoin network… (needs internet; can take a minute).';
 }
 function addNode() {
   const ip = $('nodeIp').value.trim();

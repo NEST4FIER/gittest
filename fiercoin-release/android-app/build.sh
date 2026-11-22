@@ -16,11 +16,11 @@ cd "$A"
 javac -source 8 -target 8 -bootclasspath "$JAR" -Xlint:-options -d "$O/classes" $(find src "$O/gen" -name '*.java')
 "$BT/d8" --lib "$JAR" --min-api 26 --release --output "$O/dex" $(find "$O/classes" -name '*.class')
 cp "$NODE_BIN" "$O/lib/arm64-v8a/libfiercoind.so"
-cp "${ANDROID_NDK:-/home/user/android/android-ndk-r26d}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so" "$O/lib/arm64-v8a/"
+cp "${LIBCXX:-${ANDROID_NDK:-/home/user/android/android-ndk-r26d}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so}" "$O/lib/arm64-v8a/"
 (cd "$O/dex" && zip -q "$O/unsigned.apk" classes.dex)
 (cd "$O" && zip -q -r unsigned.apk lib)
 "$BT/zipalign" -p -f 4 "$O/unsigned.apk" "$O/aligned.apk"
-"$BT/apksigner" sign --ks "$A/fiercoin-release.keystore" --ks-pass pass:fiercoin-local-key --ks-key-alias fiercoin \
+"$BT/apksigner" sign --ks "${KEYSTORE:-$A/fiercoin-release.keystore}" --ks-pass "pass:${KEYPASS:?set KEYPASS to the keystore password}" --ks-key-alias fiercoin \
   --out "$A/FierCoin.apk" "$O/aligned.apk"
 "$BT/apksigner" verify --print-certs "$A/FierCoin.apk" | head -3
 ls -la "$A/FierCoin.apk"

@@ -126,6 +126,14 @@ Bridge(MainActivity a) {
     }
 
     @JavascriptInterface
+    public void openUrl(String url) {
+        if (!url.startsWith("http://") && !url.startsWith("https://")) return;
+        Intent view = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try { a.startActivity(view); } catch (Exception ignored) { }
+    }
+
+    @JavascriptInterface
     public void share(String text) {
         Intent send = new Intent(Intent.ACTION_SEND);
         send.setType("text/plain");
