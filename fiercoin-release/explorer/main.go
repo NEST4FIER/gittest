@@ -1,5 +1,5 @@
 // FierCoin Explorer: a small block explorer website that reads from a local FierCoin node.
-// It only uses read-only node commands and never touches the wallet.
+// It never touches the node's wallet. wallet.go adds support for the browser web wallet.
 package main
 
 import (
@@ -126,14 +126,14 @@ type tx struct {
 }
 
 type block struct {
-	Hash         string      `json:"hash"`
-	Height       int         `json:"height"`
-	Time         int64       `json:"time"`
-	Size         int         `json:"size"`
-	NTx          int         `json:"nTx"`
-	Difficulty   json.Number `json:"difficulty"`
-	Previous     string      `json:"previousblockhash"`
-	Tx           []tx        `json:"tx"`
+	Hash       string      `json:"hash"`
+	Height     int         `json:"height"`
+	Time       int64       `json:"time"`
+	Size       int         `json:"size"`
+	NTx        int         `json:"nTx"`
+	Difficulty json.Number `json:"difficulty"`
+	Previous   string      `json:"previousblockhash"`
+	Tx         []tx        `json:"tx"`
 }
 
 func sats(n json.Number) int64 {
@@ -144,9 +144,11 @@ func sats(n json.Number) int64 {
 // ---------- in-memory index (addresses, balances, block list) ----------
 
 type outRef struct {
-	Addr  string
-	Value int64
-	Spent string // txid that spent it
+	Addr     string
+	Value    int64
+	Spent    string // txid that spent it
+	Height   int
+	Coinbase bool
 }
 
 type txRef struct {
@@ -160,6 +162,7 @@ type addrInfo struct {
 	Received int64
 	Sent     int64
 	Txs      []txRef
+	Outs     []string // "txid:n" of every output paid to this address
 }
 
 type blockSum struct {
@@ -209,8 +212,14 @@ func (ix *index) addBlock(b *block) {
 		for _, o := range t.Vout {
 			v := sats(o.Value)
 			a := o.SPK.addr()
-			ix.outs[t.Txid+":"+strconv.Itoa(o.N)] = &outRef{Addr: a, Value: v}
+			key := t.Txid + ":" + strconv.Itoa(o.N)
+			ix.outs[key] = &outRef{Addr: a, Value: v, Height: b.Height, Coinbase: ti == 0}
 			touch(a, v)
+			if info := ix.addrs[a]; info != nil {
+				info.Outs = append(info.Outs, key)
+			} else {
+				ix.addrs[a] = &addrInfo{Outs: []string{key}}
+			}
 			if ti == 0 {
 				sum.Reward += v
 				if sum.Miner == "" && v > 0 {
@@ -673,6 +682,7 @@ func main() {
 	mux.HandleFunc("/api/richlist", s.richlist)
 	mux.HandleFunc("/api/mempool", s.mempool)
 	mux.HandleFunc("/api/search", s.search)
+	s.addWalletAPI(mux)
 	sub, _ := fs.Sub(webFiles, "web")
 	mux.Handle("/", http.FileServer(http.FS(sub)))
 

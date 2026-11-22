@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accept FierCoin at your shop</title>
+<meta name="description" content="How a shop, creator or club can accept FierCoin (FIRC) payments for free.">
+<link rel="icon" href="logo.png">
+<style>
+  :root { --bg:#16110f; --card:#231a16; --line:#3a2b24; --text:#fff4ea; --muted:#c9b3a3; --fire:#ff8f00; --red:#d84315; --ok:#81c784; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:17px/1.55 system-ui, -apple-system, Segoe UI, sans-serif; }
+  a { color:var(--fire); }
+  .wrap { max-width:980px; margin:0 auto; padding:0 16px; }
+  header { padding:56px 0 36px; text-align:center; background:radial-gradient(ellipse at top, #3a1f12 0%, var(--bg) 70%); }
+  header img { width:110px; height:110px; }
+  h1 { font-size:44px; margin:12px 0 6px; letter-spacing:-1px; }
+  .tag { color:var(--muted); font-size:20px; margin:0 auto 26px; max-width:620px; }
+  .btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .btn { display:inline-flex; align-items:center; gap:10px; padding:16px 22px; border-radius:14px; font-weight:800; font-size:18px; text-decoration:none; color:#fff; background:linear-gradient(180deg,var(--fire),var(--red)); }
+  .btn.alt { background:#3a2b24; }
+  .btn small { display:block; font-weight:600; font-size:13px; opacity:.85; }
+  section { padding:34px 0; border-top:1px solid var(--line); }
+  h2 { font-size:28px; margin:0 0 18px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; }
+  .card h3 { margin:0 0 6px; color:var(--fire); font-size:19px; }
+  .big { font-size:30px; font-weight:800; }
+  .muted { color:var(--muted); }
+  ol { padding-left:22px; } ol li { margin-bottom:8px; }
+  code { background:#120d0b; border:1px solid var(--line); border-radius:6px; padding:2px 6px; font-size:15px; word-break:break-all; }
+  .dl { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  .warn { border-color:#7a4a1a; background:#2a1d12; }
+  footer { padding:30px 0 50px; color:var(--muted); font-size:15px; text-align:center; border-top:1px solid var(--line); }
+  @media (max-width:560px) { h1 { font-size:34px; } .tag { font-size:17px; } .btn { width:100%; justify-content:center; } }
+  nav { display:flex; gap:18px; justify-content:center; flex-wrap:wrap; padding:14px 0; font-weight:700; }
+  nav a { text-decoration:none; }
+  table { width:100%; border-collapse:collapse; } td,th { text-align:left; padding:8px; border-bottom:1px solid var(--line); }
+  .sign { background:#fff; color:#1a1a1a; border-radius:20px; padding:30px; text-align:center; max-width:420px; margin:0 auto; }
+  .sign img { width:120px; } .sign h3 { color:#d84315; font-size:34px; margin:8px 0; }
+  @media print { body * { visibility:hidden; } .sign, .sign * { visibility:visible; } .sign { position:absolute; top:0; left:0; right:0; } }
+</style>
+</head>
+<body>
+<nav class="wrap"><a href="index.html">Home</a><a href="about.html">About &amp; honesty</a><a href="accept.html">Accept FIRC</a><a href="http://68.183.155.121/">Explorer</a></nav>
+<header>
+  <div class="wrap">
+    <img src="logo.png" alt="FierCoin logo">
+    <h1>Accept FIRC</h1>
+    <p class="tag">Take FierCoin payments at your shop, stall or website. Free, no bank, no sign-up.</p>
+  </div>
+</header>
+<main class="wrap">
+
+<section>
+  <h2>Why accept it</h2>
+  <div class="grid">
+    <div class="card"><h3>Free</h3><div class="muted">No card fees, no monthly costs. Network fees are a tiny fraction of a FIRC.</div></div>
+    <div class="card"><h3>Fast</h3><div class="muted">A payment shows up in seconds and is confirmed in about 2.5 minutes.</div></div>
+    <div class="card"><h3>No sign-up</h3><div class="muted">No account, no bank, no paperwork. Just the free app.</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Set it up in 3 minutes</h2>
+  <ol>
+    <li>Install the free <a href="download/FierCoin-Android.apk">Android app</a> on the shop phone.</li>
+    <li>On the <b>Balance</b> tab, do the 2 safety steps: set a password and save a backup.</li>
+    <li>Tap <b>Receive</b>. Show the QR code to the customer, or print it and stick it by the till.</li>
+    <li>When the customer pays, check the <b>History</b> tab. Wait for 1 confirmation for big amounts.</li>
+  </ol>
+  <p class="muted">Tip: set your own price in FIRC, e.g. "Coffee: 20 FIRC" or "10% off when you pay in FIRC". Since FIRC has no official price, you decide what it's worth to you.</p>
+</section>
+
+<section>
+  <h2>Print this sign</h2>
+  <div class="sign">
+    <img src="logo.png" alt="">
+    <h3>FierCoin accepted here</h3>
+    <p>Pay with <b>FIRC</b>. Ask us for our QR code.</p>
+    <p style="font-size:14px">Free wallet: nest4fier.github.io/gittest/fiercoin</p>
+  </div>
+  <p style="text-align:center"><a class="btn alt" href="javascript:window.print()">Print the sign</a></p>
+</section>
+
+<section>
+  <div class="card warn">
+    <h3>Good to know</h3>
+    <ul>
+      <li>FIRC's value can change or stay at zero. Only accept what you're comfortable with.</li>
+      <li>Payments can't be reversed, so refunds are done by sending FIRC back.</li>
+      <li>In the US, accepting crypto for goods can count as income for taxes. Keep a simple record.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+<footer><div class="wrap">FierCoin is open source and built from Litecoin Core 0.21.4 (MIT license). <a href="https://github.com/NEST4FIER/gittest/tree/claude/salon-work-website-95l1m7/fiercoin-release">Source code</a></div></footer>
+</body>
+</html>
