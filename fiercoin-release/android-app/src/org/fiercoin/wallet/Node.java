@@ -20,6 +20,9 @@ final class Node {
     static final int RPC_PORT = 29332;
     static final String DEFAULT_WALLET = "phone";
 
+    /** Always-on FierCoin seed nodes (the same list is built into the PC wallet). */
+    static final String[] SEEDS = {"68.183.155.121:29333", "[2604:a880:800:14:0:3:e645:2000]:29333"};
+
     /** The wallet the app is showing (the original "phone" one, or a restored backup). */
     static String wallet(Context c) {
         return prefs(c).getString("wallet", DEFAULT_WALLET);
