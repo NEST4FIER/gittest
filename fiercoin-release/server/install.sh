@@ -23,10 +23,12 @@ die() { printf '\n\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 
 say "Installing the libraries FierCoin needs"
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -qq
-apt-get install -y -qq curl ca-certificates ufw caddy \
+# On a brand-new server, Ubuntu's automatic updates may be using apt: wait for them (up to 10 min).
+APT="apt-get -o DPkg::Lock::Timeout=600"
+$APT update -qq
+$APT install -y -qq curl ca-certificates ufw caddy \
   libboost-filesystem1.83.0 libboost-thread1.83.0 libdb5.3++t64 libevent-2.1-7t64 \
-  libevent-core-2.1-7t64 libevent-pthreads-2.1-7t64 libfmt9 libsqlite3-0 libssl3t64 >/dev/null
+  libevent-core-2.1-7t64 libevent-pthreads-2.1-7t64 libfmt9 libminiupnpc17 libsqlite3-0 libssl3t64 >/dev/null
 
 say "Downloading FierCoin"
 TMP=$(mktemp -d)
