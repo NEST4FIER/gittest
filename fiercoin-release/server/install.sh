@@ -146,10 +146,18 @@ if systemctl is-active --quiet fiercoind && systemctl is-active --quiet fiercoin
   Network address:    $IP:29333
 
   Next steps:
-  - On each phone app: "Connect to your laptop or friends" -> type $IP
-  - On the PC wallet: Settings > Options > Open Configuration File, add:
-        addnode=$IP:29333
-    then restart FierCoin.
+  - There's nothing to set up on the wallets. The PC and Android apps
+    find the FierCoin network by themselves through the built-in seed
+    node (68.183.155.121:29333), then learn about other computers on
+    their own. This server joins the network the same way.
+  - Optional: you can also connect a wallet to this server by hand,
+    for example if it's an extra server that isn't in the built-in
+    seed list yet:
+      Android app: More > Connect to other computers,
+        type $IP and tap Connect.
+      PC wallet: Settings > Options > Open Configuration File, add:
+          addnode=$IP:29333
+        then restart FierCoin.
 
   Useful commands on this server:
     fiercoin-cli -datadir=$DATA getblockcount      (how many blocks)
