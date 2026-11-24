@@ -1,26 +1,45 @@
 =====================================================
   FierCoin (FIRC) - Your Guide
+  FIER stands for "Freedom Is Everyone's Right"
   "Regaining our democracy in the USA"
 =====================================================
 
 WHAT FIERCOIN IS
 ----------------
 - Its own blockchain, made from Litecoin's code (just like Litecoin).
-- Mined with your computer's processor using "Scrypt", the same mining method as Litecoin.
+- Mined with your computer's or phone's processor using "Scrypt", the same mining method as Litecoin.
 - 84,000,000 coins total, ever. That's the same as Litecoin.
 - Each block pays the miner 50 FIRC. The reward is cut in half every 840,000 blocks (about every 4 years).
 - A new block is found about every 2.5 minutes. Difficulty adjusts every hour, so it stays steady when miners come and go.
 - Your wallet addresses start with "firc1" (or "F" for older-style ones).
+- One network, shared by everyone (like Bitcoin). Every FierCoin app joins it by itself.
 
 
-STEP 1 - INSTALL
-----------------
-1. Double-click "fiercoin-win64-setup.exe".
+GET FIERCOIN (pick your device)
+-------------------------------
+Everything is free on the FierCoin website:  https://nest4fier.github.io/gittest/fiercoin/
+
+- Windows PC (Windows 10 or 11): download "FierCoin-Setup-Windows.exe".
+  A wallet with a built-in miner. Follow Steps 1 to 5 below.
+- Android phone (Android 8 or newer): download "FierCoin-Android.apk".
+  A wallet with a one-tap miner. See "ON AN ANDROID PHONE" below.
+- iPhone: nothing to download. It's a web app that you open in Safari:
+  https://68-183-155-121.sslip.io/wallet/    See "ON AN IPHONE" below.
+
+They all use the same network, so you can send coins between any of them.
+
+
+STEP 1 - INSTALL ON YOUR WINDOWS PC
+-----------------------------------
+1. Double-click "FierCoin-Setup-Windows.exe".
 2. Windows may show "Windows protected your PC". This happens because the app is new and not "signed".
    Click "More info", then "Run anyway".
 3. Click Next until it finishes, then open "FierCoin Core" from the Start menu.
 4. On first launch, keep the default data folder and click OK.
-5. Allow it through the Windows Firewall if asked, so other people's computers can connect to yours.
+5. If it says "No wallet has been loaded", click "Create a new wallet", type a name
+   (for example: main), then click "Create". You only do this once.
+6. Allow it through the Windows Firewall if asked, so other people's computers can connect to yours.
+7. That's it. FierCoin finds the network by itself and downloads the blockchain (see Step 5).
 
 
 STEP 2 - MAKE YOUR WALLET SAFE (do this first!)
@@ -72,41 +91,96 @@ MINE AUTOMATICALLY EVERY TIME THE APP OPENS (optional)
       genproclimit=2
 
 
-STEP 5 - KEEP THE NETWORK ALIVE
--------------------------------
-At the start, YOUR computer is the whole FierCoin network.
-- If your computer is off, no new blocks are made. Nothing is lost; it continues when you turn it back on.
-- The more computers run FierCoin, the stronger and safer it gets.
+STEP 5 - YOU'RE ON THE NETWORK (nothing to set up)
+--------------------------------------------------
+There is ONE FierCoin network, shared by everyone, just like Bitcoin.
+Install, open, and you're on it.
+- Every FierCoin app has an always-on FierCoin computer built in (68.183.155.121, port 29333).
+  Your wallet connects to it by itself, then learns about other FierCoin computers on its own.
+- To check: rest your mouse on the little signal-bars icon in the bottom-right corner
+  (don't click it). It shows how many "active connections to FierCoin network" you have.
+  1 or more means you're on the network.
+- You can turn your PC off any time. The network keeps going, and your wallet catches up
+  the next time you open it.
+
+Help others connect: leave your PC wallet running.
+- Each PC that stays on is one more computer that new wallets can connect to and download
+  the blockchain from. The more computers run FierCoin, the stronger and safer it gets.
+- The Windows wallet opens your router for this by itself (this is called "UPnP"; most home
+  routers allow it). You don't need to "port forward" or change any router settings.
+
+
+ON AN ANDROID PHONE
+-------------------
+1. On your phone, download "FierCoin-Android.apk" from the FierCoin website and open it.
+2. If Android asks, allow installs from this source, then tap "Install".
+   It isn't from the Play Store, so you may see a warning. Tap "More details", then "Install anyway".
+3. Open "FierCoin". It starts by itself and joins the FierCoin network.
+   The top-right corner shows how many computers ("peers") you're connected to.
+4. Make your wallet safe (do this first!): on the "Balance" tab, do the 2 steps,
+   "Set a wallet password" and "Back up your wallet". The backup is saved in your
+   Downloads folder. Copy it somewhere safe too, like a USB stick or your computer.
+5. Go to the "Mining" tab and tap the big "Start mining" button. It works best while charging.
+6. Do this once, so mining doesn't stop when the screen turns off:
+   More > Settings > "Let FierCoin run in the background".
+
+To update the app later: back up first, then install the new version and tap "Update".
+Never uninstall first: that deletes your wallet.
+
+
+ON AN IPHONE
+------------
+Apple doesn't allow mining apps in the App Store, so FierCoin for iPhone is a web app.
+1. On your iPhone, open Safari and go to:  https://68-183-155-121.sslip.io/wallet/
+2. Tap the Share button at the bottom of Safari. Scroll down, tap "Add to Home Screen", then "Add".
+3. Close Safari and open "FierCoin" from your Home Screen.
+   (Make your wallet there. A wallet made in Safari won't show up in the Home Screen app.)
+4. Tap "Create a new wallet" and choose a password.
+5. WRITE DOWN your 12 secret words on paper, in order. These 12 words ARE your coins:
+   if you lose your phone, they're the only way to get your FierCoin back.
+   Don't screenshot them. Never give them to anyone, even someone who says they're from FierCoin.
+6. Go to the "Mining" tab and tap "Start mining". Keep the app open on screen while it mines:
+   iPhone pauses mining when you leave the app or lock the screen. Plug your phone in.
+
+- Your keys stay on your phone. The app works through the FierCoin server, which only sees
+  your address, never your 12 words or your password.
+- New phone? Add the web app to its Home Screen the same way, then tap "I already have 12 words".
 
 
 LETTING FRIENDS JOIN
 --------------------
-FierCoin has no "phone book" of computers yet, so friends have to be told where to find yours.
-
-On YOUR side (one time):
-1. Find your public IP address: search "what is my IP" on Google.
-2. In your internet router's settings, "port forward" TCP port 29333 to your PC.
-   (Search "port forwarding" + your router brand for steps.)
-
-On your FRIEND's side:
-1. They install FierCoin the same way.
-2. Settings > Options > "Open Configuration File", then add this line, using YOUR IP:
-
-      addnode=YOUR.IP.ADDRESS.HERE:29333
-
-3. Save and restart FierCoin. Their wallet will download the blockchain from you.
+There's nothing to set up, on your side or theirs:
+1. Send them to the FierCoin website (or send them this guide).
+2. They install FierCoin on their PC or phone and open it.
+That's all. They're on the same network as you, so you can send each other coins right away.
+(No IP addresses, no "port forwarding" and no "addnode" lines are needed any more.)
 
 
 SENDING AND RECEIVING
 ---------------------
-- To get paid: give people your "firc1..." address (Receive tab).
-- To pay someone: Send tab, paste their address and the amount, then click Send.
+- To get paid: give people your "firc1..." address. On the PC it's on the Receive tab.
+  On a phone, tap "Receive" and let them scan your QR code.
+- To pay someone on the PC: Send tab, paste their address and the amount, then click Send.
+  On a phone: tap "Send", scan their QR code (or paste their address), type the amount, tap "Send".
+- Sending is final, so check the address before you send.
+- Freshly mined coins can be sent once 100 more blocks are found (about 4 hours).
+
+
+SEE EVERY BLOCK AND PAYMENT (the explorer)
+------------------------------------------
+Anyone can look at the whole FierCoin blockchain in a web browser:
+
+      https://68-183-155-121.sslip.io/
+
+(The plain address http://68.183.155.121 works too.)
+Type your firc1... address into the search box to see your balance and payments.
+The phone apps also link to it, under "More".
 
 
 HONEST WARNINGS
 ---------------
 - FIRC has no price until people choose to trade it. Nobody can promise it will be worth $1.
-- It is not on exchanges, in MetaMask, or on Uniswap. It has its own wallet (this app).
+- It is not on exchanges, in MetaMask, or on Uniswap. It has its own wallets (the FierCoin apps).
 - Litecoin mining machines ("ASICs") also use Scrypt. If someone points one at FierCoin, they
   could win most blocks. Hourly difficulty adjustment keeps the network working if they leave.
 - Some antivirus programs flag ANY program that can mine. If yours does, it's because of the miner.
@@ -114,7 +188,7 @@ HONEST WARNINGS
 
 
 TECH DETAILS (for anyone who asks)
----------------------------------
+----------------------------------
 Based on:            Litecoin Core 0.21.4 (MIT license)
 Algorithm:           Scrypt (N=1024, r=1, p=1), the same as Litecoin
 Block time:          2.5 minutes
@@ -123,7 +197,13 @@ Block reward:        50 FIRC, halving every 840,000 blocks
 Max supply:          84,000,000 FIRC
 Coinbase maturity:   100 blocks
 P2P port:            29333      RPC port: 29332
+Seed node:           68.183.155.121:29333 (built into the apps)
+Finding peers:       automatic: the seed node first, then wallets tell each other about more
+Router (UPnP):       on by default in the Windows wallet
 Address formats:     firc1... (bech32), F... (legacy), f... (script)
 Genesis message:     "FierCoin 13/Nov/2026 Regaining our democracy in the USA"
 Genesis block hash:  71be9b5072981f23c2eeac18ffc20d99cabc31b82ff7cf23353c9ef6cae5a2b3
 Built-in miner:      setgenerate / getgenerate commands, or gen=1 in the config file
+Explorer:            https://68-183-155-121.sslip.io/  (or http://68.183.155.121)
+iPhone web app:      https://68-183-155-121.sslip.io/wallet/
+Website:             https://nest4fier.github.io/gittest/fiercoin/
