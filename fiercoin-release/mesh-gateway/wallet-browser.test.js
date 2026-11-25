@@ -43,11 +43,15 @@ function startServer() {
 // Minimal Chrome DevTools Protocol client.
 async function launch(exe) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'firc-browser-'));
-  const proc = spawn(exe, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${dir}`, '--no-first-run', '--no-default-browser-check', ...(process.env.CI ? ['--no-sandbox'] : []), 'about:blank'], { stdio: 'ignore' });
+  const ci = process.env.CI ? ['--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage'] : [];
+  const proc = spawn(exe, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${dir}`, '--no-first-run', '--no-default-browser-check', ...ci, 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
+  let errText = '';
+  proc.stderr.on('data', (d) => { errText = (errText + d).slice(-3000); });
   let port;
-  for (let i = 0; i < 100 && !port; i++) {
+  for (let i = 0; i < 300 && !port; i++) {
     try { port = fs.readFileSync(path.join(dir, 'DevToolsActivePort'), 'utf8').split('\n')[0]; } catch (e) { await new Promise((r) => setTimeout(r, 100)); }
   }
+  if (!port) { proc.kill(); throw new Error('The browser did not start within 30 s. Its messages:\n' + errText); }
   const { webSocketDebuggerUrl } = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
   const ws = new WebSocket(webSocketDebuggerUrl);
   await new Promise((ok) => ws.addEventListener('open', ok, { once: true }));
@@ -89,8 +93,9 @@ const exe = findBrowser();
 if (!exe && process.env.REQUIRE_BROWSER) throw new Error('No browser found, and REQUIRE_BROWSER is set.');
 test('wallet opens with no internet, and pays over the mesh', { skip: !exe && 'no Edge/Chrome/Chromium found' }, async () => {
   const { srv, calls, port } = await startServer();
-  const b = await launch(exe);
+  let b;
   try {
+    b = await launch(exe);
     // Online once: the wallet saves its offline copy.
     await b.page('Page.navigate', { url: `http://127.0.0.1:${port}/wallet/` });
     await until(b.evaluate, '!!(navigator.serviceWorker && navigator.serviceWorker.controller)', 'offline copy to be ready');
@@ -145,7 +150,8 @@ test('wallet opens with no internet, and pays over the mesh', { skip: !exe && 'n
     assert.equal(await b.evaluate("$('mesh-pay').disabled"), true, 'coins must be asked for again before the next payment');
     assert.equal(calls.filter((u) => u.startsWith('/api/broadcast')).length, 0);
   } finally {
-    b.close();
+    if (b) b.close();
     srv.close();
+    srv.closeAllConnections();
   }
 });
