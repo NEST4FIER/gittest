@@ -131,7 +131,14 @@ say "Setting up Tor (a private .onion address for this node)"
 # settings already ask for it). Tor problems never stop the install: the node then just
 # runs without an .onion address.
 TOR_OK=1
-if ! grep -q '^# >>> FierCoin Tor control' /etc/tor/torrc 2>/dev/null; then
+if grep -q '^# >>> FierCoin Tor control' /etc/tor/torrc 2>/dev/null; then
+  : # already added on an earlier run
+elif grep -Eq '^[[:space:]]*ControlPort' /etc/tor/torrc 2>/dev/null; then
+  # A second ControlPort on the same port would stop Tor from starting.
+  echo "Tor already has its own ControlPort in /etc/tor/torrc, so it was left alone."
+  echo "For a .onion address, the fiercoin user must be able to use it (cookie auth"
+  echo "readable by the debian-tor group: CookieAuthFileGroupReadable 1)."
+else
   cat >> /etc/tor/torrc <<'EOF' || TOR_OK=0
 
 # >>> FierCoin Tor control (added by the FierCoin installer)
@@ -144,7 +151,9 @@ EOF
 fi
 usermod -aG debian-tor fiercoin || TOR_OK=0
 systemctl enable tor >/dev/null 2>&1 || true
-systemctl restart tor || TOR_OK=0
+# On Ubuntu, "tor" is only a wrapper that always succeeds; the real Tor is tor@default.
+systemctl restart tor@default || TOR_OK=0
+systemctl is-active --quiet tor@default || TOR_OK=0
 
 say "Starting FierCoin"
 systemctl daemon-reload
