@@ -16,6 +16,7 @@ What it does:
 - **Sets up the https address**, `https://<ip-with-dashes>.sslip.io`. For example, a server at 203.0.113.10 gets `https://203-0-113-10.sslip.io`. The website also works at the plain `http://<ip>`.
 - **Serves the iPhone web wallet** at `https://<ip-with-dashes>.sslip.io/wallet/`.
 - **Opens the firewall** for ports 22 (SSH), 80 and 443 (the website) and 29333 (the FierCoin network).
+- **Sets up Tor**, so the node also gets a private `.onion` address that wallets in private mode can reach inside Tor (see "PRIVATE MODE" in the guide). The installer prints it at the end; to see it later, run `fiercoin-cli -datadir=/var/lib/fiercoin getnetworkinfo` and look for `.onion`. The address stays the same across restarts and updates because its key is kept in `/var/lib/fiercoin/onion_v3_private_key`: back that file up to keep the address. Tor needs no open ports. If Tor can't be set up, the install still finishes and the node runs without it.
 
 It is safe to run again to update; the blockchain is kept.
 

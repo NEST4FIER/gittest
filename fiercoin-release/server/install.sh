@@ -26,7 +26,7 @@ export DEBIAN_FRONTEND=noninteractive
 # On a brand-new server, Ubuntu's automatic updates may be using apt: wait for them (up to 10 min).
 APT="apt-get -o DPkg::Lock::Timeout=600"
 $APT update -qq
-$APT install -y -qq curl ca-certificates ufw caddy \
+$APT install -y -qq curl ca-certificates ufw caddy tor \
   libboost-filesystem1.83.0 libboost-thread1.83.0 libdb5.3++t64 libevent-2.1-7t64 \
   libevent-core-2.1-7t64 libevent-pthreads-2.1-7t64 libfmt9 libminiupnpc17 libsqlite3-0 libssl3t64 >/dev/null
 
@@ -126,6 +126,26 @@ ufw allow 443/tcp >/dev/null
 ufw allow 29333/tcp >/dev/null
 ufw --force enable >/dev/null
 
+say "Setting up Tor (a private .onion address for this node)"
+# The node makes its own .onion address through Tor's control port (FierCoin's default
+# settings already ask for it). Tor problems never stop the install: the node then just
+# runs without an .onion address.
+TOR_OK=1
+if ! grep -q '^# >>> FierCoin Tor control' /etc/tor/torrc 2>/dev/null; then
+  cat >> /etc/tor/torrc <<'EOF' || TOR_OK=0
+
+# >>> FierCoin Tor control (added by the FierCoin installer)
+# Lets the FierCoin node create and keep its own .onion address.
+ControlPort 9051
+CookieAuthentication 1
+CookieAuthFileGroupReadable 1
+# <<< FierCoin Tor control
+EOF
+fi
+usermod -aG debian-tor fiercoin || TOR_OK=0
+systemctl enable tor >/dev/null 2>&1 || true
+systemctl restart tor || TOR_OK=0
+
 say "Starting FierCoin"
 systemctl daemon-reload
 systemctl enable --now fiercoind >/dev/null 2>&1
@@ -136,6 +156,23 @@ systemctl restart caddy
 sleep 5
 
 if systemctl is-active --quiet fiercoind && systemctl is-active --quiet fiercoin-explorer && systemctl is-active --quiet caddy; then
+  # Wait up to 60 seconds for the node's .onion address.
+  ONION=""
+  if [ "$TOR_OK" = 1 ]; then
+    for _ in $(seq 1 30); do
+      ONION=$("$APP/fiercoin-cli" -datadir="$DATA" getnetworkinfo 2>/dev/null | grep -Eo '[a-z2-7]{56}\.onion' | head -1 || true)
+      [ -n "$ONION" ] && break
+      sleep 2
+    done
+  fi
+  if [ -n "$ONION" ]; then
+    TORLINE="Private (Tor) address: $ONION:29333"
+  elif [ "$TOR_OK" = 1 ]; then
+    TORLINE="Private (Tor) address: not ready yet. Check in a few minutes with:
+    fiercoin-cli -datadir=$DATA getnetworkinfo   (look for .onion)"
+  else
+    TORLINE="Private (Tor) address: Tor could not be set up. The node works without it."
+  fi
   cat <<EOF
 
 =====================================================
@@ -144,6 +181,7 @@ if systemctl is-active --quiet fiercoind && systemctl is-active --quiet fiercoin
   Explorer website:   https://$HOST   (or http://$IP)
   iPhone web wallet:  https://$HOST/wallet/
   Network address:    $IP:29333
+  $TORLINE
 
   Next steps:
   - There's nothing to set up on the wallets. The PC and Android apps
