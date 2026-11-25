@@ -1,6 +1,6 @@
 // Tests the wallet side of the mesh format (../explorer/web/wallet/mesh.js) against the
 // shared examples in test-vectors.json, and a full offline payment with the real wallet library.
-// Run: node --test fiercoin-release/mesh-gateway/
+// Run: node --test 'fiercoin-release/mesh-gateway/*.test.js'
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');

@@ -1,5 +1,5 @@
 """Tests for the FierCoin mesh gateway, using the shared examples in test-vectors.json.
-No radio and no internet needed. Run: python -m unittest discover fiercoin-release/mesh-gateway
+No radio and no internet needed. Run: python -m unittest discover -s fiercoin-release/mesh-gateway
 """
 import json
 import os

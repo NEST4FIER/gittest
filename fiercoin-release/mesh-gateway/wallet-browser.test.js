@@ -1,7 +1,7 @@
 // Browser test of the web wallet with no internet: it must open from its offline copy, and
 // a whole mesh payment must work through the real screens. Needs Edge, Chrome or Chromium
 // (set BROWSER=/path/to/browser if it isn't found). Skips if none is installed.
-// Run: node --test fiercoin-release/mesh-gateway/
+// Run: node --test 'fiercoin-release/mesh-gateway/*.test.js'
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('http');

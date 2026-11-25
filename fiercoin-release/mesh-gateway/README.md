@@ -68,8 +68,8 @@ The message format is in `MESH-FORMAT.md`. `test-vectors.json` holds shared exam
 sides are tested against.
 
 ```
-python -m unittest discover fiercoin-release/mesh-gateway     # gateway (no radio needed)
-node --test fiercoin-release/mesh-gateway/                    # wallet side + browser test
+python -m unittest discover -s fiercoin-release/mesh-gateway  # gateway (no radio needed)
+node --test 'fiercoin-release/mesh-gateway/*.test.js'        # wallet side + browser test
 ```
 
 The browser test needs Edge, Chrome or Chromium; it opens the wallet with the server switched
