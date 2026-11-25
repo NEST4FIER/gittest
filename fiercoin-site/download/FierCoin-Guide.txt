@@ -161,30 +161,42 @@ PRIVATE MODE (HIDE YOUR HOME ADDRESS)
 Normally your wallet tells the FierCoin network your internet address (your "IP"), and the
 Windows wallet opens a door on your router for other computers. Your IP shows roughly where
 you live and who your internet provider is. Private mode sends everything through Tor
-instead, so other computers never learn your IP. Mining and payments work the same.
+instead, so from then on other computers don't learn your IP. Mining and payments work the
+same. If you used FierCoin before without private mode, other computers
+may already have seen your address.
 
 On your Windows PC:
-1. Install Tor Browser (free, from torproject.org) and open it. Keep it open whenever
-   FierCoin is running: FierCoin uses the Tor connection inside it.
-2. In FierCoin: Settings > Options > Network.
+1. Install Tor Browser (free, from torproject.org). Open it, click "Connect", and tick
+   "Always connect automatically". Keep it open whenever FierCoin is running: FierCoin uses
+   the Tor connection inside it.
+2. Turn off Wi-Fi (or unplug the internet cable) BEFORE you open FierCoin, so it can't
+   connect the normal way before you change its settings. Then open FierCoin and go to
+   Settings > Options > Network.
    - Untick "Map port using UPnP".
    - Untick "Allow incoming connections".
    - Tick "Connect through SOCKS5 proxy (default proxy)". Proxy IP: 127.0.0.1  Port: 9150
-3. Click OK and restart FierCoin. Syncing is a little slower through Tor; that's normal.
+3. Click OK and close FierCoin. Turn the internet back on, then open FierCoin again.
+   Syncing is a little slower through Tor; that's normal.
 
-Or, instead of step 2, add these 3 lines to the configuration file
-(Settings > Options > "Open Configuration File"), then restart. Use one way or the other:
+Or, instead of the Network settings in step 2 (still offline), add these 3 lines to the
+configuration file (Settings > Options > "Open Configuration File"), then close FierCoin and
+turn the internet back on. Use one way or the other:
 
       proxy=127.0.0.1:9150
       listen=0
       upnp=0
 
-If FierCoin shows 0 connections, Tor Browser isn't open. Open it and wait a minute.
+If FierCoin shows 0 connections, Tor Browser isn't open or isn't connected yet. Open it,
+click "Connect" and wait a minute. If Tor is blocked where you live, click "Configure
+Connection" in Tor Browser and choose a bridge: it gets around the block.
 
 On an Android phone:
-The app doesn't have a private-mode switch yet. Until it does, install "Orbot" (free, from
-the Tor Project), turn on its VPN mode and choose FierCoin in its app list. Use mobile data
-rather than your home Wi-Fi: on home Wi-Fi the app can still open a door on your router.
+The Android app is not private yet: even through Tor, it can still tell other computers your
+phone's address, and on home Wi-Fi your home address. If your safety depends on hiding where
+you are, don't use the Android app; use the PC in private mode instead. Orbot (free, from
+the Tor Project) helps only partly: turn on its VPN mode and choose FierCoin in its app list,
+then in Android's Settings > Network & internet > VPN > Orbot, turn on "Always-on VPN" and
+"Block connections without VPN". Use mobile data, not home Wi-Fi.
 
 On an iPhone:
 Open the wallet address in "Onion Browser" (free, App Store) instead of Safari. Then the
@@ -195,11 +207,13 @@ What private mode does NOT hide:
 - Your payments. Every payment is still public on the blockchain. Private mode hides WHERE
   you are, not WHAT you paid.
 - That you use Tor. Your internet provider can see you're connected to Tor (not what for).
+  A bridge (see above) makes that much harder to see.
 - Your PC itself. Anyone with your PC or phone can open the wallet, so keep the password.
 
 Running a FierCoin server? The installer sets up Tor for you. At the end it prints a line
 "Private (Tor) address: ....onion:29333". Friends in private mode can add it to their
 configuration file as "addnode=....onion:29333" to reach your server inside Tor.
+This does not hide the server: its normal IP address is still public.
 
 
 SENDING AND RECEIVING
