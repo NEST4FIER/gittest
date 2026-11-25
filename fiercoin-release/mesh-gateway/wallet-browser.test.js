@@ -116,6 +116,16 @@ test('wallet opens with no internet, and pays over the mesh', { skip: !exe && 'n
     assert.match(await b.evaluate("$('mesh-coins').textContent"), /1 smaller coin/);
     await b.shot('1-mesh-screen');
 
+    // Switching to another wallet must not leave the first wallet's radio coins on screen.
+    await b.evaluate(`(async () => { startAdd('s-restore'); $('r-words').value = 'zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong'; $('r-pass').value = 'secret2'; await restore(); })()`);
+    assert.notEqual(await b.evaluate('wallet.address'), V.coins.address);
+    assert.equal(await b.evaluate("$('mesh-pay').disabled"), true, 'mesh screen must reset for the other wallet');
+    assert.equal(await b.evaluate("$('mesh-coins').textContent"), '');
+    assert.equal(await b.evaluate("$('mesh-in').value"), '');
+    await b.evaluate(`switchWallet('${V.coins.address}')`);
+    await b.evaluate(`openMesh(); $('mesh-in').value = ${JSON.stringify(V.coins.lines.join('\n'))}; meshReadCoins()`);
+    assert.equal(await b.evaluate("$('mesh-pay').disabled"), false);
+
     // Step 2: pay. The wallet must show radio lines instead of using the internet.
     await b.evaluate(`(async () => { openSend(true); $('to').value = 'firc1q4rsdpgwhsqmgjjq5jzm8kcvq7ulhu4ws0k55t6'; $('amt').value = '1'; $('s-pass').value = 'secret1'; await doSend(); })()`);
     await until(b.evaluate, "$('ov-confirm').classList.contains('on')", 'confirm pop-up');
