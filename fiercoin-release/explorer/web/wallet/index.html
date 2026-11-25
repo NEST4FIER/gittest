@@ -45,6 +45,7 @@
   button.btn:disabled { opacity:.5; }
   input, textarea { width:100%; font-size:17px; font-family:inherit; color:var(--text); background:transparent; border:0; border-bottom:2px solid #333; border-radius:0; padding:12px 2px; margin:4px 0 12px; outline:none; }
   input:focus, textarea:focus { border-bottom-color:var(--fire); }
+  select { width:100%; font-size:17px; font-family:inherit; color:var(--text); background:var(--card); border:0; border-bottom:2px solid #333; border-radius:0; padding:12px 2px; margin:4px 0 4px; outline:none; }
   textarea { min-height:90px; resize:vertical; background:#0d0d0d; border:1px solid #333; border-radius:4px; padding:10px; }
   .addr { font-family:ui-monospace, Menlo, monospace; font-size:14px; word-break:break-all; padding:8px 0; }
   .qr { background:#fff; border-radius:4px; padding:12px; width:260px; height:260px; margin:8px auto 14px; display:flex; align-items:center; justify-content:center; }
@@ -127,12 +128,14 @@
   </div>
   <button class="btn" onclick="show('s-create')">Create a new wallet</button>
   <button class="btn alt" onclick="show('s-restore')">I already have 12 words</button>
+  <button class="btn alt" id="welcome-back" style="display:none" onclick="cancelAdd()">Back to my wallet</button>
 </section>
 
 <section class="screen" id="s-create">
   <div class="card">
     <h2>Step 1: choose a password</h2>
     <p class="muted small">You'll need it to send coins from this phone. At least 6 characters.</p>
+    <input id="c-name" placeholder="Wallet name, like Savings (optional)" maxlength="40" autocomplete="off">
     <input type="password" id="c-pass" placeholder="Password" autocomplete="new-password">
     <input type="password" id="c-pass2" placeholder="Type it again" autocomplete="new-password">
     <button class="btn" onclick="createStep2()">Next</button>
@@ -154,6 +157,7 @@
 <section class="screen" id="s-restore">
   <div class="card">
     <h2>Restore from 12 words</h2>
+    <input id="r-name" placeholder="Wallet name, like Savings (optional)" maxlength="40" autocomplete="off">
     <textarea id="r-words" placeholder="word1 word2 word3 …" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea>
     <input type="password" id="r-pass" placeholder="New password for this phone (6+ characters)" autocomplete="new-password">
     <button class="btn" onclick="restore()">Restore wallet</button>
@@ -261,10 +265,17 @@
 </section>
 
 <section class="screen" id="s-more">
+  <div class="card">
+    <h2>Wallets</h2>
+    <p class="muted small" style="margin-top:0">Switch between your wallets. Each one has its own coins, address and 12 words.</p>
+    <select id="walletPick" onchange="switchWallet(this.value)"></select>
+    <button class="btn" onclick="startAdd('s-create')">Create a new wallet</button>
+    <button class="btn alt" onclick="startAdd('s-restore')">Add a wallet from 12 words</button>
+  </div>
   <button class="btn alt" onclick="showWords()">Show my 12 words (backup)</button>
   <button class="btn alt" onclick="window.open('/', '_blank')">Open the FierCoin explorer</button>
   <button class="btn alt" onclick="window.open('https://nest4fier.github.io/gittest/fiercoin/', '_blank')">FierCoin website</button>
-  <button class="btn danger" onclick="removeWallet()">Remove wallet from this phone</button>
+  <button class="btn danger" onclick="removeWallet()">Remove this wallet from this phone</button>
   <p class="muted small">Your keys stay on this phone. The FierCoin server only sees your address, never your words or password.</p>
 </section>
 
@@ -374,7 +385,7 @@ function createStep2() {
   const p = $('c-pass').value;
   if (p.length < 6) return toast('Please use at least 6 characters.');
   if (p !== $('c-pass2').value) return toast("The two passwords don't match.");
-  newPass = p; newWords = FIRC.newMnemonic();
+  newPass = p; newWords = FIRC.newMnemonic(); pendingName = $('c-name').value.trim();
   $('words').innerHTML = wordsHTML(newWords); $('c-ok').checked = false;
   show('s-words');
 }
@@ -387,26 +398,80 @@ async function restore() {
   const w = $('r-words').value, p = $('r-pass').value;
   if (!FIRC.isMnemonic(w)) return toast("Those 12 words aren't right. Check the spelling and order.");
   if (p.length < 6) return toast('Please use a password of at least 6 characters.');
+  pendingName = $('r-name').value.trim();
   await saveWallet(w.trim().toLowerCase().split(/\s+/).join(' '), p, true);
   $('r-words').value = ''; $('r-pass').value = '';
 }
-async function saveWallet(words, pass, backedUp) {
-  const k = FIRC.keyFromMnemonic(words, NET);
-  wallet = { address: k.address, net: NET, enc: await lock(words, pass), backedUp };
+// ---------- several wallets on one phone ----------
+// firc.wallets holds every wallet; firc.wallet is the one on screen (kept for older versions).
+function allWallets() {
+  let list = [];
+  try { list = JSON.parse(store('firc.wallets') || '[]'); } catch (e) { list = []; }
+  if (!list.length) {
+    try { const w = JSON.parse(store('firc.wallet') || 'null'); if (w && w.address) list = [Object.assign({ name: 'My wallet' }, w)]; } catch (e) {}
+  }
+  return list;
+}
+function saveAll(list) { store('firc.wallets', JSON.stringify(list)); }
+function saveActive() {
+  store('firc.wallet', JSON.stringify(wallet));
+  const list = allWallets(), i = list.findIndex((w) => w.address === wallet.address);
+  if (i >= 0) list[i] = wallet; else list.push(wallet);
+  saveAll(list);
+}
+function renderWalletPicker() {
+  const sel = $('walletPick'); sel.innerHTML = '';
+  for (const w of allWallets()) {
+    const o = document.createElement('option'); o.value = w.address;
+    o.textContent = (w.name || 'Wallet') + ' (' + w.address.slice(0, 9) + '…' + w.address.slice(-4) + ')';
+    sel.appendChild(o);
+  }
+  if (wallet) sel.value = wallet.address;
+}
+function switchWallet(address) {
+  const w = allWallets().find((x) => x.address === address);
+  if (!w || (wallet && w.address === wallet.address)) return;
+  wallet = w; utxos = [];
   store('firc.wallet', JSON.stringify(wallet));
   openWallet();
+  if (mining) newWork(); // keep mining, now into the wallet on screen
+  toast('Switched to ' + (w.name || 'wallet'));
+}
+let adding = false;
+function startAdd(screen) {
+  adding = true;
+  ['c-name', 'c-pass', 'c-pass2', 'r-name', 'r-words', 'r-pass'].forEach((id) => { $(id).value = ''; });
+  $('welcome-back').style.display = 'block';
+  show(screen);
+}
+function cancelAdd() { adding = false; $('welcome-back').style.display = 'none'; openWallet(); }
+let pendingName = '';
+async function saveWallet(words, pass, backedUp) {
+  const k = FIRC.keyFromMnemonic(words, NET);
+  const list = allWallets();
+  const have = list.find((w) => w.address === k.address);
+  if (have) { toast('That wallet is already on this phone, as "' + (have.name || 'Wallet') + '".'); wallet = have; store('firc.wallet', JSON.stringify(wallet)); adding = false; $('welcome-back').style.display = 'none'; return openWallet(); }
+  const name = pendingName || (list.length ? 'Wallet ' + (list.length + 1) : 'My wallet');
+  wallet = { name, address: k.address, net: NET, enc: await lock(words, pass), backedUp };
+  saveActive();
+  adding = false; $('welcome-back').style.display = 'none';
+  openWallet();
+  if (mining) newWork();
 }
 async function showWords() {
   const p = await askPass(); if (!p) return;
   try { $('ov-words-list').innerHTML = wordsHTML(await unlock(p)); $('ov-words').classList.add('on'); }
   catch (e) { toast(e.message); }
 }
-function backedUp() { closeOv('ov-words'); $('ov-words-list').innerHTML = ''; wallet.backedUp = true; store('firc.wallet', JSON.stringify(wallet)); $('backup-nag').style.display = 'none'; }
+function backedUp() { closeOv('ov-words'); $('ov-words-list').innerHTML = ''; wallet.backedUp = true; saveActive(); $('backup-nag').style.display = 'none'; }
 async function removeWallet() {
   if (!confirm('Remove this wallet from this phone?\n\nOnly do this if you have your 12 words written down. Without them, the coins are lost forever.')) return;
   const p = await askPass(); if (!p) return;
   try { await unlock(p); } catch (e) { return toast(e.message); }
-  stopMining(); store('firc.wallet', null); wallet = null; location.reload();
+  const rest = allWallets().filter((w) => w.address !== wallet.address);
+  saveAll(rest);
+  if (rest.length) { wallet = rest[0]; store('firc.wallet', JSON.stringify(wallet)); utxos = []; openWallet(); if (mining) newWork(); return toast('Wallet removed.'); }
+  stopMining(); store('firc.wallet', null); store('firc.wallets', null); wallet = null; location.reload();
 }
 
 // ---------- balance ----------
@@ -420,6 +485,7 @@ function openWallet() {
   $('qrmini').innerHTML = qr.createSvgTag(3, 0);
   $('backup-nag').style.display = wallet.backedUp ? 'none' : 'block';
   $('m-found').textContent = store('firc.found') || '0';
+  renderWalletPicker();
   tab('s-home'); refresh();
 }
 async function refresh() {
@@ -649,7 +715,7 @@ document.addEventListener('visibilitychange', async () => {
   try { const st = await api('/status'); NET = st.chain === 'regtest' ? 'regtest' : 'main'; } catch (e) {}
   const saved = store('firc.wallet');
   if (saved) { try { wallet = JSON.parse(saved); } catch (e) {} }
-  if (wallet && wallet.address) return openWallet();
+  if (wallet && wallet.address) { if (!store('firc.wallets')) { if (!wallet.name) wallet.name = 'My wallet'; saveActive(); } return openWallet(); }
   refresh();
   if (isIOS() && !standalone() && !store('firc.skipInstall')) show('s-install');
   else show('s-welcome');

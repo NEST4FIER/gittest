@@ -90,8 +90,6 @@
   details { background:var(--card); border-radius:6px; margin-bottom:8px; }
   summary { list-style:none; padding:16px 14px; font-weight:500; font-size:16px; display:flex; justify-content:space-between; }
   summary::-webkit-details-marker { display:none; }
-  summary::after { content:'A'; color:var(--muted); font-size:22px; line-height:1; }
-  details[open] summary::after { transform:rotate(90deg); }
   details > .inner { padding:0 14px 14px; }
   .note { color:var(--muted); font-size:13px; margin-top:8px; }
   .nodes div { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); font-family:monospace; font-size:14px; }
@@ -248,7 +246,7 @@
 <!-- ===================== MORE ===================== -->
 <div class="screen" id="scr-more">
 
-  <details id="dConnect"><summary>&#128279; Connect to other computers</summary><div class="inner">
+  <details id="dConnect"><summary>Connect to other computers</summary><div class="inner">
     <div class="note" style="margin-top:0">FierCoin connects to the worldwide FierCoin network by itself, like Bitcoin. You don't need to do anything here. Optional: add another FierCoin computer's address (for example your laptop, like <b>192.168.1.20</b>).</div>
     <input id="nodeIp" placeholder="IP address" autocomplete="off" autocapitalize="off" inputmode="url">
     <button onclick="addNode()">Connect</button>
@@ -256,13 +254,13 @@
     <div class="note" id="connInfo"></div>
   </div></details>
 
-  <details><summary>&#128269; Explorer</summary><div class="inner">
+  <details><summary>Explorer</summary><div class="inner">
     <div class="note" style="margin-top:0">Look at every block and transaction on the FierCoin blockchain.</div>
     <button class="alt" onclick="openExplorer()">Open explorer</button>
     <button class="alt" onclick="Fier.openUrl('http://68.183.155.121/')">Open the public explorer website</button>
   </div></details>
 
-  <details id="dSafe"><summary>&#128274; Keep your coins safe</summary><div class="inner">
+  <details id="dSafe"><summary>Keep your coins safe</summary><div class="inner">
     <button class="alt" onclick="encryptWallet()">Set a wallet password</button>
     <button class="alt" onclick="backup()">Back up wallet (saves to Downloads)</button>
     <button class="alt" onclick="$('restoreFile').click()">Restore from a backup file</button>
@@ -271,18 +269,22 @@
     <div class="note">Lose your phone with no backup = coins gone forever. Nobody can get them back.</div>
   </div></details>
 
-  <details><summary>&#128091; Wallets</summary><div class="inner">
-    <div class="note" style="margin-top:0">Pick which wallet the app shows (for example one you restored from a backup).</div>
+  <details><summary>Wallets</summary><div class="inner">
+    <div class="note" style="margin-top:0">Switch between your wallets. Each one has its own coins and addresses.</div>
     <select id="walletPick" onchange="switchWallet(this.value)"></select>
+    <div class="label" style="margin-top:16px">Make a new wallet</div>
+    <input id="newWalletName" placeholder="Name, like Savings" maxlength="40" autocomplete="off">
+    <button onclick="createNewWallet()">Create wallet</button>
+    <div class="msg" id="walletMsg"></div>
   </div></details>
 
-  <details><summary>&#9881;&#65039; Settings</summary><div class="inner">
+  <details><summary>Settings</summary><div class="inner">
     <button class="alt" onclick="Fier.batterySettings()">Let FierCoin run in the background</button>
     <div class="note">Do this once so your phone doesn't stop mining when the screen is off.</div>
     <button class="alt" onclick="stopNode()" style="color:#ffab91">Turn FierCoin off</button>
   </div></details>
 
-  <details><summary>&#10067; Help</summary><div class="inner">
+  <details><summary>Help</summary><div class="inner">
     <p><b>How do I earn FIRC?</b><br>Tap the big Mine button on Home. Each block you find pays 50 FIRC.</p>
     <p><b>Why "waiting"?</b><br>Mined coins must wait 100 blocks (about 4 hours) before you can spend them. Every mined coin works this way.</p>
     <p><b>What does "lost" mean?</b><br>Another computer found the same block first, so yours didn't count. That's normal.</p>
@@ -671,12 +673,13 @@ function renderWalletPicker() {
   const sel = $('walletPick'); sel.innerHTML = '';
   for (const n of names) {
     const o = document.createElement('option'); o.value = n;
-    o.textContent = n === 'phone' ? 'This phone (original)' : (n.indexOf('restored-') === 0 ? 'Restored backup ' + n.slice(9) : n);
+    o.textContent = n === 'phone' ? 'This phone (original)' : (n.indexOf('restored-') === 0 ? 'Restored backup ' + n.slice(9) : n.replace(/[-_]/g, ' '));
     sel.appendChild(o);
   }
   sel.value = W();
 }
 function switchWallet(name) {
+  $('walletMsg').style.display = 'none';
   const old = W();
   Fier.setActiveWallet(name);
   try {
@@ -684,6 +687,18 @@ function switchWallet(name) {
     if (mining) call('setgenerate', [true, threads(), localStorage.getItem(addrKey())]); // mine into the wallet you're looking at
     refresh();
   } catch (e) { Fier.setActiveWallet(old); renderWalletPicker(); alert('Could not open that wallet: ' + (e.message || e)); }
+}
+function createNewWallet() {
+  const name = $('newWalletName').value.trim().replace(/\s+/g, '-').replace(/[^A-Za-z0-9._-]/g, '').slice(0, 40);
+  if (!name) { show('walletMsg', 'Type a name for the new wallet, like Savings.', false); return; }
+  let names = [];
+  try { names = call('listwalletdir').wallets.map(w => w.name); } catch (e) {}
+  if (name === 'phone' || names.indexOf(name) >= 0) { show('walletMsg', 'You already have a wallet called ' + name + '. Pick another name.', false); return; }
+  try { call('createwallet', [name, false, false, '', false, false, true]); }
+  catch (e) { show('walletMsg', 'Could not make the wallet: ' + (e.message || e), false); return; }
+  $('newWalletName').value = '';
+  switchWallet(name);
+  if (W() === name) show('walletMsg', 'Made "' + name + '" and switched to it. Do the 2 safety steps on the Balance tab for this wallet too.', true);
 }
 function restoreBackup(input) {
   const f = input.files && input.files[0]; input.value = '';
