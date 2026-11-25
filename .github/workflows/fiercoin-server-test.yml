@@ -42,6 +42,12 @@ jobs:
           done
           echo "No .onion address after 120 s"; sudo tail -50 /var/lib/fiercoin/debug.log; exit 1
 
+      - name: Web wallet with its offline copy and mesh screen is served
+        run: |
+          curl -fsS http://127.0.0.1:8080/wallet/sw.js | grep -q 'firc-wallet-v1'
+          curl -fsS http://127.0.0.1:8080/wallet/mesh.js | grep -q 'FIRCMesh'
+          curl -fsS http://127.0.0.1:8080/wallet/ | grep -q 'Pay over mesh radio'
+
       - name: Installer printed the .onion address
         run: |
           grep -E 'Private \(Tor\) address: +[a-z2-7]{56}\.onion:29333' install1.log

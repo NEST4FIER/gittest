@@ -216,6 +216,38 @@ configuration file as "addnode=....onion:29333" to reach your server inside Tor.
 This does not hide the server: its normal IP address is still public.
 
 
+NO INTERNET? PAY OVER MESH RADIO
+--------------------------------
+When there's no internet (a blackout, no cell service, or a network that's been switched
+off), FierCoin can still travel over Meshtastic radios: small radios (about the size of a
+phone) that pass short text messages to each other, often several kilometres per hop. One
+computer somewhere in the mesh that still has internet runs the "FierCoin mesh gateway"
+and passes payments on. Your 12 words and password never leave your phone.
+
+Get ready while you still have internet:
+1. Get a Meshtastic radio (for example a Heltec V3, LILYGO T-Beam or RAK WisBlock; in the
+   US choose 915 MHz) and the free Meshtastic app. Pair them, set the region, and join the
+   private channel of the person who runs the gateway (they share a QR code).
+2. Open the FierCoin web wallet once with internet. It saves a copy of itself on your phone,
+   so it opens later with no internet. (Use the web wallet in Safari or Chrome; the Android
+   app doesn't have this yet.)
+
+To pay with no internet (web wallet: More > "No internet? Pay over mesh radio"):
+1. Copy the message the wallet shows ("FIRC U ...") and send it in the Meshtastic app.
+   Paste the gateway's answer ("FIRC u ..." lines) into the wallet and tap "Read my coins".
+2. Tap "Make a payment" and fill it in as usual. The wallet shows a few short messages
+   ("FIRC T ..."). Send each one in the Meshtastic app, in order.
+3. The gateway answers "FIRC ok" (sent) or "FIRC err" (not sent, and why). Paste it into the
+   wallet to check. Ask for your coins again before your next payment.
+
+Good to know:
+- It's slow: each radio message takes a few seconds or more.
+- Only your 6 biggest coins come over the radio. Lots of small mined coins? Send everything
+  to yourself in one payment while you still have internet.
+- Use a private channel. On the default "LongFast" channel anyone nearby can read the messages.
+- Radio signals can be traced to roughly where they come from.
+Running a gateway: see "mesh-gateway/README.md" in the FierCoin source.
+
 SENDING AND RECEIVING
 ---------------------
 - To get paid: give people your "firc1..." address. On the PC it's on the Receive tab.
