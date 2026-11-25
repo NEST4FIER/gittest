@@ -58,6 +58,10 @@ opens with no internet later. Open it once online before you need it.
   The payment itself becomes public on the blockchain anyway, like every FierCoin payment.
 - **Radios can be found.** Anyone with the right equipment can tell roughly where a radio is
   sending from.
+- **"FIRC ok" is the gateway's word.** Anyone on the channel could send a fake one. For anything
+  that matters, have the person you paid check that the coins arrived. (Fake coin lists can't
+  trick the wallet into paying more: each signature covers the coin's exact amount, so the
+  network refuses a payment built on wrong amounts.)
 - **Wait for the answer** before paying again. Ask for your coins again before each payment,
   so you don't try to spend the same coin twice.
 - **The Android app** doesn't have the mesh screen yet; use the web wallet in Chrome.

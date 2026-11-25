@@ -239,6 +239,8 @@ To pay with no internet (web wallet: More > "No internet? Pay over mesh radio"):
    ("FIRC T ..."). Send each one in the Meshtastic app, in order.
 3. The gateway answers "FIRC ok" (sent) or "FIRC err" (not sent, and why). Paste it into the
    wallet to check. Ask for your coins again before your next payment.
+   "FIRC ok" is the gateway's word only: anyone on the channel could fake it. For anything
+   that matters, have the person you paid check that the coins arrived.
 
 Good to know:
 - It's slow: each radio message takes a few seconds or more.
