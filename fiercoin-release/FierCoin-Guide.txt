@@ -156,6 +156,52 @@ That's all. They're on the same network as you, so you can send each other coins
 (No IP addresses, no "port forwarding" and no "addnode" lines are needed any more.)
 
 
+PRIVATE MODE (HIDE YOUR HOME ADDRESS)
+-------------------------------------
+Normally your wallet tells the FierCoin network your internet address (your "IP"), and the
+Windows wallet opens a door on your router for other computers. Your IP shows roughly where
+you live and who your internet provider is. Private mode sends everything through Tor
+instead, so other computers never learn your IP. Mining and payments work the same.
+
+On your Windows PC:
+1. Install Tor Browser (free, from torproject.org) and open it. Keep it open whenever
+   FierCoin is running: FierCoin uses the Tor connection inside it.
+2. In FierCoin: Settings > Options > Network.
+   - Untick "Map port using UPnP".
+   - Untick "Allow incoming connections".
+   - Tick "Connect through SOCKS5 proxy (default proxy)". Proxy IP: 127.0.0.1  Port: 9150
+3. Click OK and restart FierCoin. Syncing is a little slower through Tor; that's normal.
+
+Or, instead of step 2, add these 3 lines to the configuration file
+(Settings > Options > "Open Configuration File"), then restart. Use one way or the other:
+
+      proxy=127.0.0.1:9150
+      listen=0
+      upnp=0
+
+If FierCoin shows 0 connections, Tor Browser isn't open. Open it and wait a minute.
+
+On an Android phone:
+The app doesn't have a private-mode switch yet. Until it does, install "Orbot" (free, from
+the Tor Project), turn on its VPN mode and choose FierCoin in its app list. Use mobile data
+rather than your home Wi-Fi: on home Wi-Fi the app can still open a door on your router.
+
+On an iPhone:
+Open the wallet address in "Onion Browser" (free, App Store) instead of Safari. Then the
+FierCoin server sees a Tor address, not yours. Make your wallet there, and write down your
+12 words as usual. It can't be added to the Home Screen, so open Onion Browser each time.
+
+What private mode does NOT hide:
+- Your payments. Every payment is still public on the blockchain. Private mode hides WHERE
+  you are, not WHAT you paid.
+- That you use Tor. Your internet provider can see you're connected to Tor (not what for).
+- Your PC itself. Anyone with your PC or phone can open the wallet, so keep the password.
+
+Running a FierCoin server? The installer sets up Tor for you. At the end it prints a line
+"Private (Tor) address: ....onion:29333". Friends in private mode can add it to their
+configuration file as "addnode=....onion:29333" to reach your server inside Tor.
+
+
 SENDING AND RECEIVING
 ---------------------
 - To get paid: give people your "firc1..." address. On the PC it's on the Receive tab.
