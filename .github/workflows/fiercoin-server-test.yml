@@ -1,0 +1,59 @@
+# Tests the FierCoin server installer on a fresh Ubuntu 24.04 machine.
+# Runs install.sh twice (it must be safe to run again), then checks that the node and Tor
+# are running and that the node got a private .onion address.
+# Uses the server files from this branch. No secrets, no outside input.
+name: Test FierCoin server installer
+
+on:
+  pull_request:
+    paths:
+      - "fiercoin-release/server/**"
+      - ".github/workflows/fiercoin-server-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run install.sh (first time)
+        run: sudo env FIERCOIN_BASE="file://$PWD/fiercoin-release/server/bin" bash fiercoin-release/server/install.sh | tee install1.log
+
+      - name: Node and Tor are running
+        run: |
+          systemctl is-active fiercoind fiercoin-explorer caddy
+          systemctl is-active tor@default
+
+      - name: Node has a .onion address
+        run: |
+          for i in $(seq 1 24); do
+            onion=$(sudo fiercoin-cli -datadir=/var/lib/fiercoin getnetworkinfo | grep -Eo '[a-z2-7]{56}\.onion' | head -1 || true)
+            if [ -n "$onion" ]; then echo "Got $onion"; exit 0; fi
+            sleep 5
+          done
+          echo "No .onion address after 120 s"; sudo tail -50 /var/lib/fiercoin/debug.log; exit 1
+
+      - name: Installer printed the .onion address
+        run: grep -E 'Private \(Tor\) address: +[a-z2-7]{56}\.onion:29333' install1.log
+
+      - name: Run install.sh again (must be safe to repeat)
+        run: sudo env FIERCOIN_BASE="file://$PWD/fiercoin-release/server/bin" bash fiercoin-release/server/install.sh | tee install2.log
+
+      - name: Tor settings were added once, and everything still runs
+        run: |
+          test "$(grep -c '>>> FierCoin Tor control' /etc/tor/torrc)" = 1
+          systemctl is-active fiercoind fiercoin-explorer caddy tor@default
+          grep -E 'Private \(Tor\) address: +[a-z2-7]{56}\.onion:29333' install2.log
+          # Same address both times: the onion key is kept with the blockchain.
+          a=$(grep -Eo '[a-z2-7]{56}\.onion' install1.log | head -1)
+          b=$(grep -Eo '[a-z2-7]{56}\.onion' install2.log | head -1)
+          echo "first: $a  second: $b"; test -n "$a" && test "$a" = "$b"
