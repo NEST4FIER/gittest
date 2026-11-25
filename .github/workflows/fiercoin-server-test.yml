@@ -43,7 +43,8 @@ jobs:
           echo "No .onion address after 120 s"; sudo tail -50 /var/lib/fiercoin/debug.log; exit 1
 
       - name: Installer printed the .onion address
-        run: grep -E 'Private \(Tor\) address: +[a-z2-7]{56}\.onion:29333' install1.log
+        run: |
+          grep -E 'Private \(Tor\) address: +[a-z2-7]{56}\.onion:29333' install1.log
 
       - name: Run install.sh again (must be safe to repeat)
         run: sudo env FIERCOIN_BASE="file://$PWD/fiercoin-release/server/bin" bash fiercoin-release/server/install.sh | tee install2.log
