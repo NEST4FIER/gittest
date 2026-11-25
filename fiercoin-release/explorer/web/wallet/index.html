@@ -261,11 +261,30 @@
 </section>
 
 <section class="screen" id="s-more">
+  <button class="btn alt" onclick="openMesh()">No internet? Pay over mesh radio</button>
   <button class="btn alt" onclick="showWords()">Show my 12 words (backup)</button>
   <button class="btn alt" onclick="window.open('/', '_blank')">Open the FierCoin explorer</button>
   <button class="btn alt" onclick="window.open('https://nest4fier.github.io/gittest/fiercoin/', '_blank')">FierCoin website</button>
   <button class="btn danger" onclick="removeWallet()">Remove wallet from this phone</button>
   <p class="muted small">Your keys stay on this phone. The FierCoin server only sees your address, never your words or password.</p>
+</section>
+
+<section class="screen" id="s-mesh">
+  <div class="card">
+    <h2>Pay over mesh radio</h2>
+    <p class="small">For when there's no internet. You need the Meshtastic app with a radio, and a FierCoin gateway within radio reach (see the guide). You copy short messages between this wallet and the Meshtastic app.</p>
+    <div class="label" style="margin-top:12px">1. Ask for your coins</div>
+    <p class="small">Send this message on the gateway's channel in the Meshtastic app:</p>
+    <div class="addr" id="mesh-ask"></div>
+    <button class="btn alt" onclick="meshCopy($('mesh-ask').textContent)">Copy</button>
+    <p class="small">Then paste the gateway's answer here (the lines that start with "FIRC u"):</p>
+    <textarea id="mesh-in" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="FIRC u …"></textarea>
+    <button class="btn alt" onclick="meshReadCoins()">Read my coins</button>
+    <p class="small" id="mesh-coins"></p>
+    <div class="label" style="margin-top:12px">2. Pay</div>
+    <button class="btn" id="mesh-pay" onclick="openSend(true)" disabled>Make a payment</button>
+    <button class="btn alt" onclick="tab('s-more')">Back</button>
+  </div>
 </section>
 
 <!-- ===== Pop-ups ===== -->
@@ -301,11 +320,24 @@
     <button class="btn alt" onclick="closeOv('ov-confirm')">Cancel</button>
   </div>
 </div>
+<div class="overlay" id="ov-mesh">
+  <div class="card" style="max-height:90vh;overflow:auto">
+    <h2>Send these messages</h2>
+    <p class="small">In the Meshtastic app, send each message below, in order, on the gateway's channel.</p>
+    <div id="mesh-lines"></div>
+    <p class="small">Then paste the gateway's answer here (it starts with "FIRC ok" or "FIRC err"):</p>
+    <textarea id="mesh-res" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="FIRC ok …"></textarea>
+    <button class="btn alt" onclick="meshReadResult()">Check the answer</button>
+    <p class="small" id="mesh-done"></p>
+    <button class="btn alt" onclick="closeOv('ov-mesh'); tab('s-mesh')">Close</button>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script src="firc-lib.js"></script>
 <script src="qrcode.js"></script>
 <script src="jsQR.js"></script>
+<script src="mesh.js"></script>
 <script>
 'use strict';
 const API = '/api';
@@ -465,7 +497,10 @@ function shareAddr() { if (navigator.share) navigator.share({ title: 'My FierCoi
 
 // ---------- send ----------
 function spendable() { return utxos.filter((c) => c.mature); }
-function openSend() {
+let meshMode = false;
+function openSend(mesh) {
+  meshMode = mesh === true;
+  $('send-btn').textContent = meshMode ? 'Next: radio messages' : 'Send';
   $('to').value = ''; $('amt').value = ''; $('all').checked = false; $('s-pass').value = ''; sendAllChanged();
   const total = spendable().reduce((s, c) => s + c.value, 0);
   $('avail').textContent = 'You can send up to ' + fmt(total) + ' FIRC (minus a tiny network fee).';
@@ -495,8 +530,11 @@ async function doSend() {
   } catch (e) { return toast(e.message); }
   $('cf-text').innerHTML = `Send <b>${fmt(p.amount)} FIRC</b> to<br><span class="addr" style="display:block;margin:8px 0">${esc(to)}</span>Network fee: ${fmt(p.fee)} FIRC`;
   $('ov-confirm').classList.add('on');
+  $('cf-ok').textContent = meshMode ? 'Show radio messages' : 'Send now';
   $('cf-ok').onclick = async () => {
-    closeOv('ov-confirm'); $('send-btn').disabled = true;
+    closeOv('ov-confirm');
+    if (meshMode) return showMeshLines(p);
+    $('send-btn').disabled = true;
     try {
       await api('/broadcast', { hex: p.hex });
       toast('Sent! It will confirm in about 2.5 minutes.', 5000);
@@ -504,6 +542,49 @@ async function doSend() {
     } catch (e) { toast(e.message, 6000); }
     $('send-btn').disabled = false;
   };
+}
+
+// ---------- mesh radio (no internet) ----------
+let meshPending = null;
+function meshCopy(text) {
+  navigator.clipboard.writeText(text).then(() => toast('Copied. Paste it in the Meshtastic app.'), () => toast('Press and hold the text to copy it.'));
+}
+function openMesh() {
+  if (!wallet) return;
+  $('mesh-ask').textContent = FIRCMesh.coinsRequest(wallet.address);
+  tab('s-more'); show('s-mesh'); // keeps "More" lit in the tab bar
+}
+function meshReadCoins() {
+  const r = FIRCMesh.parseCoins($('mesh-in').value, wallet.address);
+  $('mesh-pay').disabled = true;
+  if (!r.have) return void ($('mesh-coins').textContent = `No answer for your address found. Paste the lines that start with "FIRC u ${wallet.address.slice(-6)}".`);
+  if (!r.complete) return void ($('mesh-coins').textContent = `Got ${r.have} of ${r.total} lines from the gateway. Paste the rest too.`);
+  utxos = r.utxos;
+  if (!utxos.length) return void ($('mesh-coins').textContent = 'The gateway says this address has no coins it can spend yet.');
+  const total = utxos.reduce((s, c) => s + c.value, 0);
+  let msg = `${utxos.length} coin${utxos.length > 1 ? 's' : ''}, ${fmt(total)} FIRC, ready to send over the mesh.`;
+  if (r.more) msg += ` (${r.more} smaller coin${r.more > 1 ? 's' : ''} stayed behind: only the 6 biggest come over the radio.)`;
+  $('mesh-coins').textContent = msg;
+  $('mesh-pay').disabled = false;
+}
+function showMeshLines(p) {
+  let lines;
+  try { lines = FIRCMesh.paymentLines(p.hex); } catch (e) { return toast(e.message, 6000); }
+  meshPending = { id: lines[0].split(' ')[2], txid: p.txid };
+  $('mesh-lines').innerHTML = lines.map((l, i) =>
+    `<div class="addr">${esc(l)}</div><button class="btn alt" onclick="meshCopy(this.previousElementSibling.textContent)">Copy message ${i + 1} of ${lines.length}</button>`).join('');
+  $('mesh-res').value = ''; $('mesh-done').textContent = '';
+  // These coins are now used: ask for coins again before the next payment.
+  utxos = []; $('mesh-pay').disabled = true;
+  $('mesh-coins').textContent = 'Those coins are used now. Before your next payment, ask for your coins again (step 1).';
+  $('ov-mesh').classList.add('on');
+}
+function meshReadResult() {
+  const r = meshPending && FIRCMesh.parseResult($('mesh-res').value, meshPending.id);
+  if (!r) return void ($('mesh-done').textContent = `That isn't the gateway's answer for this payment. Look for "FIRC ok ${meshPending ? meshPending.id : ''}".`);
+  $('mesh-done').innerHTML = r.ok
+    ? `Sent! It will confirm in about 2.5 minutes. Payment number:<span class="addr" style="display:block">${esc(r.txid)}</span>`
+    : `Not sent: ${esc(r.message)}`;
 }
 
 // ---------- QR scanning ----------
@@ -649,11 +730,14 @@ document.addEventListener('visibilitychange', async () => {
   try { const st = await api('/status'); NET = st.chain === 'regtest' ? 'regtest' : 'main'; } catch (e) {}
   const saved = store('firc.wallet');
   if (saved) { try { wallet = JSON.parse(saved); } catch (e) {} }
+  if (wallet && wallet.net) NET = wallet.net; // works offline too, when the server can't be asked
   if (wallet && wallet.address) return openWallet();
   refresh();
   if (isIOS() && !standalone() && !store('firc.skipInstall')) show('s-install');
   else show('s-welcome');
 })();
+// Keep a copy of the wallet on this phone, so it opens with no internet (mesh radio).
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
 </html>
