@@ -58,3 +58,41 @@ jobs:
           a=$(grep -Eo '[a-z2-7]{56}\.onion' install1.log | head -1)
           b=$(grep -Eo '[a-z2-7]{56}\.onion' install2.log | head -1)
           echo "first: $a  second: $b"; test -n "$a" && test "$a" = "$b"
+
+  # Tor is broken (a bad line in torrc): the install must still finish and say Tor failed,
+  # not "not ready yet".
+  tor-broken:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Tor with a broken setting
+        run: |
+          sudo apt-get -o DPkg::Lock::Timeout=600 install -y -qq tor >/dev/null
+          echo 'NotARealTorOption 1' | sudo tee -a /etc/tor/torrc
+      - name: Run install.sh
+        run: sudo env FIERCOIN_BASE="file://$PWD/fiercoin-release/server/bin" bash fiercoin-release/server/install.sh | tee install.log
+      - name: Node runs and the summary says Tor failed
+        run: |
+          systemctl is-active fiercoind fiercoin-explorer caddy
+          grep -F 'Private (Tor) address: Tor could not be set up' install.log
+
+  # The owner already set up Tor's control port: leave it alone, don't add a second one.
+  tor-customised:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Tor with its own ControlPort
+        run: |
+          sudo apt-get -o DPkg::Lock::Timeout=600 install -y -qq tor >/dev/null
+          printf 'ControlPort 9051\nCookieAuthentication 1\n' | sudo tee -a /etc/tor/torrc
+          sudo systemctl restart tor@default
+      - name: Run install.sh
+        run: sudo env FIERCOIN_BASE="file://$PWD/fiercoin-release/server/bin" bash fiercoin-release/server/install.sh | tee install.log
+      - name: Tor still runs, no second ControlPort, owner was told
+        run: |
+          systemctl is-active fiercoind tor@default
+          test "$(grep -c '>>> FierCoin Tor control' /etc/tor/torrc)" = 0
+          test "$(grep -Ec '^[[:space:]]*ControlPort' /etc/tor/torrc)" = 1
+          grep -F 'already has its own ControlPort' install.log
