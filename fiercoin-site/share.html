@@ -15,56 +15,13 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://nest4fier.github.io/gittest/fiercoin/og.png">
 <link rel="icon" href="logo.png">
-<style>
-  :root { --bg:#16110f; --card:#231a16; --line:#3a2b24; --text:#fff4ea; --muted:#c9b3a3; --fire:#ff8f00; --red:#d84315; --ok:#81c784; }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--text); font:17px/1.55 system-ui, -apple-system, Segoe UI, sans-serif; }
-  a { color:var(--fire); }
-  .wrap { max-width:980px; margin:0 auto; padding:0 16px; }
-  header { padding:56px 0 36px; text-align:center; background:radial-gradient(ellipse at top, #3a1f12 0%, var(--bg) 70%); }
-  header img { width:110px; height:110px; }
-  h1 { font-size:44px; margin:12px 0 6px; letter-spacing:-1px; }
-  .tag { color:var(--muted); font-size:20px; margin:0 auto 26px; max-width:620px; }
-  .btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
-  .btn { display:inline-flex; align-items:center; gap:10px; padding:16px 22px; border-radius:14px; font-weight:800; font-size:18px; text-decoration:none; color:#fff; background:linear-gradient(180deg,var(--fire),var(--red)); }
-  .btn.alt { background:#3a2b24; }
-  .btn small { display:block; font-weight:600; font-size:13px; opacity:.85; }
-  section { padding:34px 0; border-top:1px solid var(--line); }
-  h2 { font-size:28px; margin:0 0 18px; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; }
-  .card h3 { margin:0 0 6px; color:var(--fire); font-size:19px; }
-  .big { font-size:30px; font-weight:800; }
-  .muted { color:var(--muted); }
-  ol { padding-left:22px; } ol li { margin-bottom:8px; }
-  code { background:#120d0b; border:1px solid var(--line); border-radius:6px; padding:2px 6px; font-size:15px; word-break:break-all; }
-  .dl { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
-  .warn { border-color:#7a4a1a; background:#2a1d12; }
-  footer { padding:30px 0 50px; color:var(--muted); font-size:15px; text-align:center; border-top:1px solid var(--line); }
-  @media (max-width:560px) { h1 { font-size:34px; } .tag { font-size:17px; } .btn { width:100%; justify-content:center; } }
-  nav { display:flex; gap:18px; justify-content:center; flex-wrap:wrap; padding:14px 0; font-weight:700; }
-  nav a { text-decoration:none; }
-  table { width:100%; border-collapse:collapse; } td,th { text-align:left; padding:8px; border-bottom:1px solid var(--line); }
-  .sign { background:#fff; color:#1a1a1a; border-radius:20px; padding:30px; text-align:center; max-width:420px; margin:0 auto; }
-  .sign img { width:120px; } .sign h3 { color:#d84315; font-size:34px; margin:8px 0; }
-  @media print { body * { visibility:hidden; } .sign, .sign * { visibility:visible; } .sign { position:absolute; top:0; left:0; right:0; } }
-  .fl { color:var(--fire); }
-
-  .fl { color:var(--fire); }
-  .slogan { font-size:26px; font-weight:800; margin:2px 0 14px; letter-spacing:-.3px; }
-  blockquote { border-left:4px solid var(--fire); margin:18px 0; padding:6px 0 6px 18px; font-size:21px; font-style:italic; color:var(--text); }
-  .sharegrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
-  .sbtn { display:flex; align-items:center; justify-content:center; gap:8px; padding:15px 12px; border-radius:12px; font-weight:800; font-size:16px; text-decoration:none; color:#fff; background:#3a2b24; border:0; cursor:pointer; font-family:inherit; }
-  .sbtn.x { background:#000; border:1px solid #555; } .sbtn.fb { background:#1877f2; } .sbtn.rd { background:#ff4500; }
-  .sbtn.tg { background:#229ed9; } .sbtn.wa { background:#1fa855; } .sbtn.li { background:#0a66c2; }
-  .copybox { white-space:pre-wrap; background:#120d0b; border:1px solid var(--line); border-radius:12px; padding:14px; font-size:15px; margin:0 0 10px; overflow-wrap:anywhere; }
-</style>
+<link rel="stylesheet" href="site.css">
 </head>
 <body>
-<nav class="wrap"><a href="index.html">Home</a><a href="why.html">Why FIER</a><a href="about.html">About &amp; honesty</a><a href="accept.html">Accept FIRC</a><a href="share.html">Spread the word</a><a href="https://68-183-155-121.sslip.io/">Explorer</a></nav>
+<div class="top"><div class="wrap"><a class="brand" href="index.html"><img src="logo.png" alt="">FierCoin</a><a class="pill" href="https://68-183-155-121.sslip.io/">Explorer</a></div></div>
+<nav class="tabs"><div class="wrap"><a href="index.html">Home</a><a href="why.html">Why FIER</a><a href="about.html">About</a><a href="accept.html">Accept</a><a href="share.html" class="on">Share</a></div></nav>
 <header>
   <div class="wrap">
-    <img src="logo.png" alt="FierCoin logo">
     <h1>Spread the word</h1>
     <p class="tag">FierCoin grows only if people hear about it. One tap gets a post ready; you choose where, and you press Post.</p>
   </div>
@@ -73,7 +30,7 @@
 
 <section>
   <h2>Share in one tap</h2>
-  <p><button class="sbtn" id="nativeShare" style="display:none;width:100%;margin-bottom:10px;background:linear-gradient(180deg,var(--fire),var(--red))" onclick="nativeShare()">Share from your phone</button></p>
+  <p><button class="btn" id="nativeShare" style="display:none;width:100%;margin-bottom:10px" onclick="nativeShare()">Share from your phone</button></p>
   <div class="sharegrid">
     <a class="sbtn x" href="https://x.com/intent/tweet?text=Freedom%20Is%20Everyone%27s%20Right.%20That%27s%20what%20FIER%20stands%20for.%20FierCoin%20%28FIRC%29%20is%20a%20coin%20nobody%20owns%3A%20mine%20it%20free%20on%20your%20phone%20or%20PC.%20No%20ID%2C%20no%20bank%2C%20no%20permission.%20%23FierCoin&amp;url=https%3A%2F%2Fnest4fier.github.io%2Fgittest%2Ffiercoin%2F" target="_blank" rel="noopener">Post on X</a>
     <a class="sbtn fb" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fnest4fier.github.io%2Fgittest%2Ffiercoin%2F" target="_blank" rel="noopener">Facebook</a>
@@ -104,7 +61,7 @@ FierCoin is a coin nobody owns, built from Litecoin&#x27;s open code.
 
 👉 Free wallet: https://nest4fier.github.io/gittest/fiercoin/
 ❓ Why FIER: https://nest4fier.github.io/gittest/fiercoin/why.html</div>
-  <button class="sbtn" style="width:100%" onclick="copyText('discordText', this)">Copy the Discord post</button>
+  <button class="btn alt" style="width:100%" onclick="copyText('discordText', this)">Copy the Discord post</button>
 </section>
 
 <section>
