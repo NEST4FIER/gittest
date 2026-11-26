@@ -230,7 +230,10 @@ Get ready while you still have internet:
    private channel of the person who runs the gateway (they share a QR code).
 2. Open the FierCoin web wallet once with internet. It saves a copy of itself on your phone,
    so it opens later with no internet. (Use the web wallet in Safari or Chrome; the Android
-   app doesn't have this yet.)
+   app doesn't have this yet.) On an iPhone, also add it to the Home Screen (Share > Add to
+   Home Screen) and open it from there: Safari deletes the saved copy of a website you
+   haven't opened for 7 days. Onion Browser can't keep a copy at all. Every month or so,
+   turn on airplane mode and check that the wallet still opens.
 
 To pay with no internet (web wallet: More > "No internet? Pay over mesh radio"):
 1. Copy the message the wallet shows ("FIRC U ...") and send it in the Meshtastic app.
@@ -239,8 +242,10 @@ To pay with no internet (web wallet: More > "No internet? Pay over mesh radio"):
    ("FIRC T ..."). Send each one in the Meshtastic app, in order.
 3. The gateway answers "FIRC ok" (sent) or "FIRC err" (not sent, and why). Paste it into the
    wallet to check. Ask for your coins again before your next payment.
-   "FIRC ok" is the gateway's word only: anyone on the channel could fake it. For anything
-   that matters, have the person you paid check that the coins arrived.
+   Both answers can be faked by anyone on the channel. For anything that matters, have the
+   person you paid check that the coins arrived. After "not sent", ask for your coins again
+   before paying again: if the wallet says the coins are gone, the payment went through.
+   If the wallet says a coin's amount changed, stop: someone is sending fake coin lists.
 
 Good to know:
 - It's slow: each radio message takes a few seconds or more.

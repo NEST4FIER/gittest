@@ -22,19 +22,27 @@ function findBrowser() {
   return c.find((p) => p && fs.existsSync(p));
 }
 
-// A stand-in FierCoin server: the wallet files plus a tiny API.
-function startServer() {
+// A stand-in FierCoin server: the wallet files plus a tiny API. `S` changes how it behaves:
+// S.down = 502 for every wallet file (like Caddy with the Explorer stopped), S.slowMs = answer
+// wallet files late, S.apiDown = no live data (no internet), S.version = a marker put into index.html, S.utxos = the online coin list.
+function startServer(S = {}) {
   const calls = [];
   const srv = http.createServer((req, res) => {
     calls.push(req.url);
+    if (S.apiDown && req.url.startsWith('/api/')) { res.writeHead(502); return res.end(); }
     if (req.url === '/api/status') return res.end(JSON.stringify({ blocks: 100, hashps: 1 }));
+    if (req.url.startsWith('/api/utxos/')) return res.end(JSON.stringify({ tip: 100, utxos: S.utxos || [] }));
     if (req.url.startsWith('/api/')) { res.writeHead(404); return res.end('{}'); }
+    if (S.down) { res.writeHead(502); return res.end('Bad Gateway'); }
     let p = path.join(WEB, decodeURIComponent(req.url.split('?')[0]));
     if (p.endsWith(path.sep) || p.endsWith('/')) p = path.join(p, 'index.html');
     fs.readFile(p, (err, data) => {
       if (err) { res.writeHead(404); return res.end(); }
-      res.writeHead(200, { 'Content-Type': TYPES[path.extname(p)] || 'application/octet-stream' });
-      res.end(data);
+      if (S.version && p.endsWith('index.html')) data = Buffer.from(String(data).replace('<head>', `<head><meta name="x-version" content="${S.version}">`));
+      setTimeout(() => {
+        res.writeHead(200, { 'Content-Type': TYPES[path.extname(p)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
+        res.end(data);
+      }, S.slowMs || 0);
     });
   });
   return new Promise((ok) => srv.listen(0, '127.0.0.1', () => ok({ srv, calls, port: srv.address().port })));
@@ -154,4 +162,95 @@ test('wallet opens with no internet, and pays over the mesh', { skip: !exe && 'n
     srv.close();
     srv.closeAllConnections();
   }
+});
+
+// Gateway-style coin line for the test wallet.
+const toLine = (coins, i = 1, n = 1) => `FIRC u ${V.coins.address.slice(-6)} ${i}/${n} ` +
+  coins.map((c) => `${Buffer.from(c.txid, 'hex').toString('base64url')}.${c.vout.toString(36)}.${c.value.toString(36)}`).join(' ');
+const CA = { txid: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', vout: 2 };
+const CB = { txid: 'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210', vout: 0 };
+const CC = { txid: '1111111111111111111111111111111111111111111111111111111111111111', vout: 1 };
+
+async function withWallet(S, fn) {
+  const { srv, port } = await startServer(S);
+  let b;
+  try {
+    b = await launch(exe);
+    await b.page('Page.navigate', { url: `http://127.0.0.1:${port}/wallet/` });
+    await until(b.evaluate, '!!(navigator.serviceWorker && navigator.serviceWorker.controller)', 'offline copy to be ready');
+    await fn(b);
+  } finally {
+    if (b) b.close();
+    srv.close();
+    srv.closeAllConnections();
+  }
+}
+
+test('fake radio answers: changed amounts, forged "not sent", mixed answers, coins gone', { skip: !exe && 'no Edge/Chrome/Chromium found' }, async () => {
+  const S = { apiDown: true }; // no internet: only the radio
+  await withWallet(S, async (b) => {
+    await b.evaluate(`(async () => { show('s-restore'); $('r-words').value = '${WORDS}'; $('r-pass').value = 'secret1'; await restore(); })()`);
+    await b.evaluate('openMesh()');
+    const read = async (text) => { await b.evaluate(`$('mesh-in').value = ${JSON.stringify(text)}; meshReadCoins()`); return b.evaluate("$('mesh-coins').textContent"); };
+
+    // 1. A faker answers A=10, B=2, and later A=7, B=5 (the "two signatures" trick).
+    await read(toLine([{ ...CA, value: 10e8 }, { ...CB, value: 2e8 }]));
+    assert.equal(await b.evaluate("$('mesh-pay').disabled"), false);
+    assert.match(await read(toLine([{ ...CA, value: 7e8 }, { ...CB, value: 5e8 }])), /fake/i);
+    assert.equal(await b.evaluate("$('mesh-pay').disabled"), true, 'must not sign with changed amounts');
+    // Still refused after a page reload (the amounts are remembered on the phone).
+    await b.page('Page.reload', {});
+    await until(b.evaluate, "document.readyState === 'complete' && typeof wallet === 'object' && !!wallet", 'wallet to reload');
+    await b.evaluate('openMesh()');
+    assert.match(await read(toLine([{ ...CA, value: 7e8 }, { ...CB, value: 5e8 }])), /fake/i);
+
+    // 2. Online, the server's real amounts replace what the radio said.
+    S.apiDown = false;
+    S.utxos = [{ ...CA, value: 10e8, mature: true, height: 5 }, { ...CB, value: 5e8, mature: true, height: 5 }];
+    await b.evaluate('refresh()');
+    await b.evaluate('openMesh()');
+    assert.doesNotMatch(await read(toLine([{ ...CA, value: 10e8 }, { ...CB, value: 5e8 }])), /fake/i);
+    assert.equal(await b.evaluate("$('mesh-pay').disabled"), false);
+
+    // 3. Lines that disagree with each other.
+    assert.match(await read(toLine([{ ...CA, value: 10e8 }], 1, 1) + '\n' + toLine([{ ...CC, value: 1e8 }], 2, 1)), /don't agree/i);
+    assert.equal(await b.evaluate("$('mesh-pay').disabled"), true);
+    await read(toLine([{ ...CA, value: 10e8 }, { ...CB, value: 5e8 }]));
+
+    // 4. Pay; a forged "not sent" must not make it look safe to pay again.
+    await b.evaluate(`(async () => { openSend(true); $('to').value = 'firc1q4rsdpgwhsqmgjjq5jzm8kcvq7ulhu4ws0k55t6'; $('amt').value = '1'; $('s-pass').value = 'secret1'; await doSend(); })()`);
+    await until(b.evaluate, "$('ov-confirm').classList.contains('on')", 'confirm pop-up');
+    await b.evaluate("$('cf-ok').click()");
+    await until(b.evaluate, "$('ov-mesh').classList.contains('on')", 'mesh lines pop-up');
+    const id = await b.evaluate("document.querySelector('#mesh-lines .addr').textContent.split(' ')[2]");
+    await b.evaluate(`$('mesh-res').value = 'FIRC err ${id} Not sent'; meshReadResult()`);
+    assert.match(await b.evaluate("$('mesh-done').textContent"), /ask for your coins again/i);
+    await b.evaluate(`$('mesh-res').value = ${JSON.stringify(`FIRC err ${id} Not sent\n`)} + 'FIRC ok ${id} ${V.payment.txid}'; meshReadResult()`);
+    assert.match(await b.evaluate("$('mesh-done').textContent"), /both/i);
+
+    // 5. The next coin answer no longer has the coins the payment used: it went through.
+    await b.evaluate("closeOv('ov-mesh')");
+    assert.match(await read(toLine([{ ...CC, value: 3e8 }])), /went through/i);
+  });
+});
+
+test('offline copy: a server error page or a slow update never breaks the wallet', { skip: !exe && 'no Edge/Chrome/Chromium found' }, async () => {
+  const S = {};
+  await withWallet(S, async (b) => {
+    const ready = "document.readyState === 'complete' && typeof FIRC === 'object' && typeof FIRCMesh === 'object'";
+    // The server is up but the Explorer behind it isn't: every file is a 502 error page.
+    S.down = true;
+    await b.page('Page.reload', {});
+    await until(b.evaluate, ready, 'wallet to open from its saved copy');
+    // A new version arrives on a very slow link: this time the saved copy opens...
+    S.down = false; S.version = 'v2'; S.slowMs = 6500;
+    await b.page('Page.reload', {});
+    await until(b.evaluate, ready, 'wallet to open while the network is slow');
+    assert.equal(await b.evaluate("document.querySelector('meta[name=x-version]')"), null);
+    await new Promise((r) => setTimeout(r, 4000)); // ...and the late answer still updates the copy.
+    S.down = true; S.slowMs = 0;
+    await b.page('Page.reload', {});
+    await until(b.evaluate, ready, 'wallet to open from its saved copy');
+    assert.equal(await b.evaluate("document.querySelector('meta[name=x-version]')?.content"), 'v2');
+  });
 });

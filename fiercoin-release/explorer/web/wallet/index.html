@@ -536,6 +536,7 @@ async function refresh() {
   try {
     const u = await api('/utxos/' + wallet.address);
     utxos = u.utxos;
+    meshTrust(utxos);
     let ready = 0, incoming = 0, young = 0;
     for (const c of utxos) { if (!c.mature) young += c.value; else if (!c.height) incoming += c.value; else ready += c.value; }
     $('bal').innerHTML = fmt(ready + incoming) + ' <small>FIRC</small>';
@@ -612,10 +613,17 @@ async function doSend() {
 }
 
 // ---------- mesh radio (no internet) ----------
-let meshPending = null;
+let meshPending = null, meshUsed = [];
 function meshReset() {
-  meshPending = null; $('mesh-pay').disabled = true;
+  meshPending = null; meshUsed = []; $('mesh-pay').disabled = true;
   $('mesh-in').value = ''; $('mesh-coins').textContent = '';
+}
+// Every coin amount the radio told us, kept on this phone (see rememberValues in mesh.js).
+function meshKnown() { try { return JSON.parse(store('firc.meshvals.' + wallet.address)) || {}; } catch (e) { return {}; } }
+function meshTrust(list) {
+  const known = {};
+  for (const c of list) known[c.txid + ':' + c.vout] = c.value;
+  store('firc.meshvals.' + wallet.address, JSON.stringify(known));
 }
 function meshCopy(text) {
   navigator.clipboard.writeText(text).then(() => toast('Copied. Paste it in the Meshtastic app.'), () => toast('Press and hold the text to copy it.'));
@@ -628,12 +636,20 @@ function openMesh() {
 function meshReadCoins() {
   const r = FIRCMesh.parseCoins($('mesh-in').value, wallet.address);
   $('mesh-pay').disabled = true;
+  if (r.conflict) return void ($('mesh-coins').textContent = "These lines don't agree with each other, so someone on the channel may be sending fake ones. Ask for your coins again and paste only the gateway's newest answer.");
+  if (r.bad) return void ($('mesh-coins').textContent = 'Some of these lines are damaged. Ask for your coins again.');
   if (!r.have) return void ($('mesh-coins').textContent = `No answer for your address found. Paste the lines that start with "FIRC u ${wallet.address.slice(-6)}".`);
   if (!r.complete) return void ($('mesh-coins').textContent = `Got ${r.have} of ${r.total} lines from the gateway. Paste the rest too.`);
+  const mem = FIRCMesh.rememberValues(meshKnown(), r.utxos);
+  if (mem.changed.length) return void ($('mesh-coins').textContent = 'Stop: this answer gives different amounts for coins than an earlier answer did. A coin\'s amount never changes, so someone may be sending fake coin lists. Don\'t pay over the radio now. Your coins are safe; the next time you\'re online, the wallet checks the real amounts.');
+  store('firc.meshvals.' + wallet.address, JSON.stringify(mem.known));
+  let msg = '';
+  if (FIRCMesh.coinsGone(meshUsed, r.utxos)) msg = 'Your last radio payment most likely went through: the coins it used are gone. Check with the person you paid before paying again. ';
+  meshUsed = [];
   utxos = r.utxos;
-  if (!utxos.length) return void ($('mesh-coins').textContent = 'The gateway says this address has no coins it can spend yet.');
+  if (!utxos.length) return void ($('mesh-coins').textContent = msg + 'The gateway says this address has no coins it can spend yet.');
   const total = utxos.reduce((s, c) => s + c.value, 0);
-  let msg = `${utxos.length} coin${utxos.length > 1 ? 's' : ''}, ${fmt(total)} FIRC, ready to send over the mesh.`;
+  msg += `${utxos.length} coin${utxos.length > 1 ? 's' : ''}, ${fmt(total)} FIRC, ready to send over the mesh.`;
   if (r.more) msg += ` (${r.more} smaller coin${r.more > 1 ? 's' : ''} stayed behind: only the 6 biggest come over the radio.)`;
   $('mesh-coins').textContent = msg;
   $('mesh-pay').disabled = false;
@@ -642,6 +658,7 @@ function showMeshLines(p) {
   let lines;
   try { lines = FIRCMesh.paymentLines(p.hex); } catch (e) { return toast(e.message, 6000); }
   meshPending = { id: lines[0].split(' ')[2], txid: p.txid };
+  meshUsed = FIRCMesh.txInputs(p.hex);
   $('mesh-lines').innerHTML = lines.map((l, i) =>
     `<div class="addr">${esc(l)}</div><button class="btn alt" onclick="meshCopy(this.previousElementSibling.textContent)">Copy message ${i + 1} of ${lines.length}</button>`).join('');
   $('mesh-res').value = ''; $('mesh-done').textContent = '';
@@ -653,9 +670,11 @@ function showMeshLines(p) {
 function meshReadResult() {
   const r = meshPending && FIRCMesh.parseResult($('mesh-res').value, meshPending.id);
   if (!r) return void ($('mesh-done').textContent = `That isn't the gateway's answer for this payment. Look for "FIRC ok ${meshPending ? meshPending.id : ''}".`);
+  const check = 'Answers can be faked, so before paying again, ask for your coins again (step 1): if the coins this payment used are gone, it went through.';
+  if (r.conflict) return void ($('mesh-done').textContent = 'You got both "sent" and "not sent" answers for this payment, so someone may be faking them. ' + check);
   $('mesh-done').innerHTML = r.ok
     ? `Sent! It will confirm in about 2.5 minutes. Payment number:<span class="addr" style="display:block">${esc(r.txid)}</span>`
-    : `Not sent: ${esc(r.message)}`;
+    : `The gateway says it was not sent: ${esc(r.message)}<br>${esc(check)}`;
 }
 
 // ---------- QR scanning ----------

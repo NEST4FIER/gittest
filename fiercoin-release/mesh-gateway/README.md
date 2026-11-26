@@ -47,7 +47,9 @@ More > **No internet? Pay over mesh radio**:
    Paste it into the wallet to check.
 
 The wallet saves a copy of itself on the phone the first time it's opened with internet, so it
-opens with no internet later. Open it once online before you need it.
+opens with no internet later. Open it once online before you need it. On an iPhone, add it to
+the Home Screen and open it from there: Safari deletes saved website data after 7 days without
+a visit, and Onion Browser can't keep a copy at all. Test it in airplane mode now and then.
 
 ## Honest limits
 
@@ -58,10 +60,15 @@ opens with no internet later. Open it once online before you need it.
   The payment itself becomes public on the blockchain anyway, like every FierCoin payment.
 - **Radios can be found.** Anyone with the right equipment can tell roughly where a radio is
   sending from.
-- **"FIRC ok" is the gateway's word.** Anyone on the channel could send a fake one. For anything
-  that matters, have the person you paid check that the coins arrived. (Fake coin lists can't
-  trick the wallet into paying more: each signature covers the coin's exact amount, so the
-  network refuses a payment built on wrong amounts.)
+- **"FIRC ok" and "FIRC err" are the gateway's word.** Anyone on the channel could send a fake
+  one. For anything that matters, have the person you paid check that the coins arrived. After
+  "not sent", ask for your coins again: if the wallet says the coins are gone, it went through.
+- **Fake coin lists.** Each signature covers its own coin's amount, so one wrong amount just
+  makes the payment invalid. But two payments signed with *different* wrong amounts could be
+  combined into one valid payment that spends the difference as network fee (a known weakness
+  of this kind of signature). So the wallet remembers every amount it hears for a coin and
+  refuses to sign if a later answer gives a different one, and it refuses coin lines that
+  don't agree with each other. Online, the server's real amounts replace what the radio said.
 - **Wait for the answer** before paying again. Ask for your coins again before each payment,
   so you don't try to spend the same coin twice.
 - **The Android app** doesn't have the mesh screen yet; use the web wallet in Chrome.

@@ -34,6 +34,20 @@ never answers another gateway.
   has more, the last line ends with `+<k>`: k coins weren't sent.
 - `<message>` is at most 150 characters.
 
+## How the wallet reads answers (anyone on the channel can send lines)
+
+- Coin lines must agree: every line has `1 ≤ i ≤ n` and the same `n`, and one number never
+  has two different lines (the same line pasted twice is fine). A damaged coin, or a value
+  above 2^53, also stops the list. Such a list is never used for signing.
+- A coin's value never changes. The wallet remembers every `<txid>.<vout>` → value it has
+  heard (newest 500, per address) and refuses to sign when an answer gives a different value.
+  Without this, two signatures made with different fake values could be combined (BIP143
+  signs only its own input's value) and the difference would go to fees. Online, the
+  server's coin list replaces the remembered values.
+- More than one different `ok`/`err` line for one `<id>` is reported as a conflict.
+- After a payment, if a later coin answer no longer has the coins it spent, the wallet says
+  it most likely went through, whatever `ok`/`err` said.
+
 ## Example
 
 `FIRC U firc1quspe8ts4nmm7swdcx8f3vz9f2cuecamldkjmgk` gets the answer
