@@ -1,0 +1,104 @@
+# Tests the FierCoin server installer on a fresh Ubuntu 24.04 machine.
+# Runs install.sh twice (it must be safe to run again), then checks that the node and Tor
+# are running and that the node got a private .onion address.
+# Uses the server files from this branch. No secrets, no outside input.
+name: Test FierCoin server installer
+
+on:
+  pull_request:
+    paths:
+      - "fiercoin-release/server/**"
+      - ".github/workflows/fiercoin-server-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run install.sh (first time)
+        run: sudo env FIERCOIN_BASE="file://$PWD/fiercoin-release/server/bin" bash fiercoin-release/server/install.sh | tee install1.log
+
+      - name: Node and Tor are running
+        run: |
+          systemctl is-active fiercoind fiercoin-explorer caddy
+          systemctl is-active tor@default
+
+      - name: Node has a .onion address
+        run: |
+          for i in $(seq 1 24); do
+            onion=$(sudo fiercoin-cli -datadir=/var/lib/fiercoin getnetworkinfo | grep -Eo '[a-z2-7]{56}\.onion' | head -1 || true)
+            if [ -n "$onion" ]; then echo "Got $onion"; exit 0; fi
+            sleep 5
+          done
+          echo "No .onion address after 120 s"; sudo tail -50 /var/lib/fiercoin/debug.log; exit 1
+
+      - name: Web wallet with its offline copy and mesh screen is served
+        run: |
+          curl -fsS http://127.0.0.1:8080/wallet/sw.js | grep -q 'firc-wallet-v1'
+          curl -fsS http://127.0.0.1:8080/wallet/mesh.js | grep -q 'FIRCMesh'
+          curl -fsS http://127.0.0.1:8080/wallet/ | grep -q 'Pay over mesh radio'
+
+      - name: Installer printed the .onion address
+        run: |
+          grep -E 'Private \(Tor\) address: +[a-z2-7]{56}\.onion:29333' install1.log
+
+      - name: Run install.sh again (must be safe to repeat)
+        run: sudo env FIERCOIN_BASE="file://$PWD/fiercoin-release/server/bin" bash fiercoin-release/server/install.sh | tee install2.log
+
+      - name: Tor settings were added once, and everything still runs
+        run: |
+          test "$(grep -c '>>> FierCoin Tor control' /etc/tor/torrc)" = 1
+          systemctl is-active fiercoind fiercoin-explorer caddy tor@default
+          grep -E 'Private \(Tor\) address: +[a-z2-7]{56}\.onion:29333' install2.log
+          # Same address both times: the onion key is kept with the blockchain.
+          a=$(grep -Eo '[a-z2-7]{56}\.onion' install1.log | head -1)
+          b=$(grep -Eo '[a-z2-7]{56}\.onion' install2.log | head -1)
+          echo "first: $a  second: $b"; test -n "$a" && test "$a" = "$b"
+
+  # Tor is broken (a bad line in torrc): the install must still finish and say Tor failed,
+  # not "not ready yet".
+  tor-broken:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Tor with a broken setting
+        run: |
+          sudo apt-get -o DPkg::Lock::Timeout=600 install -y -qq tor >/dev/null
+          echo 'NotARealTorOption 1' | sudo tee -a /etc/tor/torrc
+      - name: Run install.sh
+        run: sudo env FIERCOIN_BASE="file://$PWD/fiercoin-release/server/bin" bash fiercoin-release/server/install.sh | tee install.log
+      - name: Node runs and the summary says Tor failed
+        run: |
+          systemctl is-active fiercoind fiercoin-explorer caddy
+          grep -F 'Private (Tor) address: Tor could not be set up' install.log
+
+  # The owner already set up Tor's control port: leave it alone, don't add a second one.
+  tor-customised:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Tor with its own ControlPort
+        run: |
+          sudo apt-get -o DPkg::Lock::Timeout=600 install -y -qq tor >/dev/null
+          printf 'ControlPort 9051\nCookieAuthentication 1\n' | sudo tee -a /etc/tor/torrc
+          sudo systemctl restart tor@default
+      - name: Run install.sh
+        run: sudo env FIERCOIN_BASE="file://$PWD/fiercoin-release/server/bin" bash fiercoin-release/server/install.sh | tee install.log
+      - name: Tor still runs, no second ControlPort, owner was told
+        run: |
+          systemctl is-active fiercoind tor@default
+          test "$(grep -c '>>> FierCoin Tor control' /etc/tor/torrc)" = 0
+          test "$(grep -Ec '^[[:space:]]*ControlPort' /etc/tor/torrc)" = 1
+          grep -F 'already has its own ControlPort' install.log

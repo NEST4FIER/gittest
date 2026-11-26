@@ -1,0 +1,114 @@
+{
+  "_about": "Shared examples for MESH-FORMAT.md. Generated with Python's base64 module, independently of mesh.js and the gateway.",
+  "coins": {
+    "address": "firc1quspe8ts4nmm7swdcx8f3vz9f2cuecamldkjmgk",
+    "utxos": [
+      {
+        "txid": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "vout": 0,
+        "value": 5000000000,
+        "mature": true
+      },
+      {
+        "txid": "0000000000000000000000000000000000000000000000000000000000000001",
+        "vout": 1,
+        "value": 12345,
+        "mature": true
+      },
+      {
+        "txid": "abababababababababababababababababababababababababababababababab",
+        "vout": 2,
+        "value": 7000000000,
+        "mature": false
+      },
+      {
+        "txid": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "vout": 37,
+        "value": 250000000,
+        "mature": true
+      },
+      {
+        "txid": "fefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefe",
+        "vout": 3,
+        "value": 100,
+        "mature": true
+      },
+      {
+        "txid": "1010101010101010101010101010101010101010101010101010101010101010",
+        "vout": 4,
+        "value": 8400000000000000,
+        "mature": true
+      },
+      {
+        "txid": "2020202020202020202020202020202020202020202020202020202020202020",
+        "vout": 5,
+        "value": 99999,
+        "mature": true
+      },
+      {
+        "txid": "3030303030303030303030303030303030303030303030303030303030303030",
+        "vout": 6,
+        "value": 5,
+        "mature": true
+      }
+    ],
+    "lines": [
+      "FIRC u dkjmgk 1/2 EBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBA.4.2apjuq6fdhc __________________________________________8.0.2aovcow ASNFZ4mrze8BI0VniavN7wEjRWeJq83vASNFZ4mrze8.11.44ud8g",
+      "FIRC u dkjmgk 2/2 ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA.5.255r AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE.1.9ix _v7-_v7-_v7-_v7-_v7-_v7-_v7-_v7-_v7-_v7-_v4.3.2s +1"
+    ],
+    "wallet_gets": [
+      {
+        "txid": "1010101010101010101010101010101010101010101010101010101010101010",
+        "vout": 4,
+        "value": 8400000000000000,
+        "mature": true
+      },
+      {
+        "txid": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "vout": 0,
+        "value": 5000000000,
+        "mature": true
+      },
+      {
+        "txid": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "vout": 37,
+        "value": 250000000,
+        "mature": true
+      },
+      {
+        "txid": "2020202020202020202020202020202020202020202020202020202020202020",
+        "vout": 5,
+        "value": 99999,
+        "mature": true
+      },
+      {
+        "txid": "0000000000000000000000000000000000000000000000000000000000000001",
+        "vout": 1,
+        "value": 12345,
+        "mature": true
+      },
+      {
+        "txid": "fefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefe",
+        "vout": 3,
+        "value": 100,
+        "mature": true
+      }
+    ],
+    "more": 1
+  },
+  "none": {
+    "address": "firc1quspe8ts4nmm7swdcx8f3vz9f2cuecamldkjmgk",
+    "lines": [
+      "FIRC u dkjmgk 1/1 none"
+    ]
+  },
+  "payment": {
+    "hex": "02000000000101abababababababababababababababababababababababababababababababab0100000000ffffffff0215cd5b0700000000160014a8e0d0a1d7803689481490b67b6180f73f7e55d0b221aa2201000000160014e40393ae159ef7e839b831d31608a956399c777f024730440220751a6fe52c0d46a6b3c67931964e1129130502273d6e666b12daca3a2925ef63022020a48c519aa0b6140ce46695141bb341ced7c8187e3c802e6042805a4682f8d70121032d2d09d28114471b8e315aef384535582d1a98dcdd563323f4a506eb012a857d00000000",
+    "txid": "742d056d5baf50f9bc179baf352d875b7064561b4c1a0c49cbe80535069afcf7",
+    "id": "k7q2",
+    "lines": [
+      "FIRC T k7q2 1/2 AgAAAAABAaurq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urAQAAAAD_____AhXNWwcAAAAAFgAUqODQodeANolIFJC2e2GA9z9-VdCyIaoiAQAAABYAFOQDk64VnvfoObgx0xYIqVY5nHd_AkcwRAIgdRpv5SwNRqazxnkxlk4RKRMF",
+      "FIRC T k7q2 2/2 Aic9bmZrEtrKOikl72MCICCkjFGaoLYUDORmlRQbs0HO18gYfjyALmBCgFpGgvjXASEDLS0J0oEURxuOMVrvOEU1WC0amNzdVjMj9KUG6wEqhX0AAAAA"
+    ]
+  }
+}

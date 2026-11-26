@@ -1,0 +1,71 @@
+# Tests FierCoin's mesh radio parts, and builds the FierCoin Explorer (which carries the web
+# wallet inside it). The committed Explorer programs must match a fresh build of this source.
+# No secrets, no outside input.
+name: Test FierCoin mesh radio
+
+on:
+  pull_request:
+    paths:
+      - "fiercoin-release/mesh-gateway/**"
+      - "fiercoin-release/explorer/**"
+      - "fiercoin-release/server/bin/fiercoin-explorer"
+      - "fiercoin-site/download/FierCoin-Explorer.exe"
+      - ".github/workflows/fiercoin-mesh-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Wallet side and browser test (wallet opens offline, pays over the mesh)
+        env:
+          BROWSER: /usr/bin/google-chrome
+          REQUIRE_BROWSER: "1"
+        run: node --test 'fiercoin-release/mesh-gateway/*.test.js'
+      - name: Gateway
+        run: python3 -m unittest discover -v -s fiercoin-release/mesh-gateway
+
+  explorer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: fiercoin-release/explorer/go.mod
+          cache: false
+      - name: Build the Explorer for Linux and Windows
+        working-directory: fiercoin-release/explorer
+        run: |
+          mkdir -p out
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -buildvcs=false -ldflags "-s -w -buildid=" -o out/fiercoin-explorer .
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -buildvcs=false -ldflags "-s -w -buildid=" -o out/FierCoin-Explorer.exe .
+          sha256sum out/*
+      - name: The wallet's offline copy and mesh screen are inside
+        working-directory: fiercoin-release/explorer
+        run: |
+          grep -c 'firc-wallet-v1' out/fiercoin-explorer
+          grep -c 'FIRCMesh' out/FierCoin-Explorer.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fiercoin-explorer
+          path: fiercoin-release/explorer/out/
+      - name: Committed programs match this source
+        working-directory: fiercoin-release/explorer
+        run: |
+          cmp out/fiercoin-explorer ../server/bin/fiercoin-explorer
+          cmp out/FierCoin-Explorer.exe ../../fiercoin-site/download/FierCoin-Explorer.exe
+          (cd ../server/bin && sha256sum -c SHA256SUMS)
+          (cd ../../fiercoin-site/download && grep ' FierCoin-Explorer.exe$' SHA256SUMS.txt | sha256sum -c -)
