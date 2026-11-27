@@ -24,8 +24,6 @@
   .card { background:var(--card); border-radius:6px; padding:14px; margin-bottom:12px; }
   .card h2 { font-size:13px; margin:0 0 8px; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; font-weight:700; }
   .label { color:var(--muted); font-size:13px; text-transform:uppercase; letter-spacing:.6px; }
-  .balance { font-size:40px; font-weight:300; letter-spacing:-0.5px; margin:2px 0; word-break:break-word; text-align:center; }
-  .balance .unit { font-size:20px; color:var(--muted); font-weight:400; margin-left:8px; }
   .sub { color:var(--muted); font-size:14px; margin-top:4px; }
   .sub b { color:var(--warn); font-weight:600; }
   button { width:100%; border:0; border-radius:4px; padding:14px; font-size:15px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:#fff; background:var(--fire); margin-top:10px; }
@@ -37,14 +35,43 @@
   select { background:var(--card); }
   .msg { padding:12px; border-radius:4px; background:#1b1b1b; margin-top:10px; display:none; font-size:14px; }
   .hidden { display:none !important; }
-  /* balance header: QR + address, like Mycelium */
-  .acct { display:flex; gap:14px; align-items:center; padding:14px; background:var(--card); border-radius:6px; margin:12px 0; }
-  .acct .qrmini { background:#fff; padding:5px; border-radius:3px; flex:none; }
-  .acct .qrmini img { width:88px; height:88px; display:block; image-rendering:pixelated; }
-  .acct .who { min-width:0; flex:1; }
-  .acct .addrline { font-family:monospace; font-size:13px; color:var(--text); word-break:break-all; margin:4px 0 6px; }
-  .acct .copy { color:var(--fire); font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; }
-  .balwrap { text-align:center; padding:18px 0 8px; }
+  /* The wallet as a card. Tap it to get paid. */
+  .fcard { position:relative; overflow:hidden; aspect-ratio:1.586; max-width:400px; margin:14px auto 6px; border-radius:16px; padding:16px 18px 14px; color:#fff;
+           background:radial-gradient(120% 90% at 100% 0%, rgba(255,143,0,.55) 0%, rgba(255,143,0,0) 55%), linear-gradient(140deg, #d84315 0%, #a8320f 50%, #5a1406 100%);
+           box-shadow:0 10px 30px rgba(216,67,21,.22); display:flex; flex-direction:column; justify-content:space-between; gap:8px; }
+  .fc-top { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .fc-brand { display:flex; align-items:center; gap:8px; font-weight:700; font-size:17px; }
+  .fc-brand img { width:26px; height:26px; }
+  .fc-name { font-size:12px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; background:rgba(0,0,0,.28); padding:4px 8px; border-radius:4px; max-width:55%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .fc-bal { font-size:34px; font-weight:400; letter-spacing:-.5px; line-height:1.1; overflow-wrap:anywhere; }
+  .fc-bal .unit { font-size:15px; font-weight:700; letter-spacing:.6px; margin-left:6px; opacity:.85; }
+  .fc-bottom { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; }
+  .fc-addr { font-family:monospace; font-size:14px; letter-spacing:.4px; }
+  .fc-copy { display:inline-block; margin-top:6px; font-size:12px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,.5); }
+  .fc-qr { background:#fff; border-radius:6px; padding:4px; width:74px; height:74px; flex:none; }
+  .fc-qr img { width:100%; height:100%; display:block; image-rendering:pixelated; }
+  .balwrap { text-align:center; padding:6px 0 8px; }
+  /* Get paid: charge an amount */
+  .rc-amt { font-size:28px; font-weight:400; margin:-4px 0 2px; }
+  .rc-status { color:var(--muted); font-size:14px; text-align:left; min-height:20px; margin-top:4px; }
+  .rc-status.wait { color:var(--warn); } .rc-status.bad { color:var(--bad); }
+  .paid { padding:6px 0 0; }
+  .paid .tick { width:108px; height:108px; border-radius:50%; background:var(--ok); color:#000; font-size:62px; line-height:108px; font-weight:700; margin:8px auto 12px; }
+  .paid-title { font-size:15px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--ok); }
+  .paid-amt { font-size:34px; font-weight:300; margin:4px 0; }
+  /* pay-me card screen, and printing only the sheet of cards (10 per page, 3.5 x 2 in each) */
+  #paycard { position:fixed; inset:0; background:var(--bg); z-index:9; display:none; overflow-y:auto; padding:0 14px 40px; }
+  .pc-img { width:100%; display:block; border-radius:6px; background:#fff; margin:6px 0 14px; }
+  #printSheet { display:none; }
+  @media print {
+    @page { margin:0.5in; }
+    html, body { background:#fff !important; }
+    body { padding:0 !important; margin:0 !important; }
+    body > :not(#printSheet) { display:none !important; }
+    #printSheet { display:grid !important; grid-template-columns:3.5in 3.5in; grid-auto-rows:2in; width:7in; margin:0 auto; }
+    #printSheet div { outline:0.6pt dashed #999; outline-offset:-0.3pt; overflow:hidden; break-inside:avoid; }
+    #printSheet img { width:3.5in; height:2in; display:block; }
+  }
   .status { text-align:center; color:var(--muted); font-size:13px; margin-top:6px; }
   /* bottom action bar (SEND / RECEIVE) */
   .actions { position:fixed; left:0; right:0; bottom:0; display:flex; gap:1px; background:var(--line); z-index:6; padding-bottom:env(safe-area-inset-bottom); }
@@ -149,16 +176,18 @@
 
 <!-- ===================== HOME ===================== -->
 <div class="screen on" id="scr-home">
-  <div class="acct click" onclick="tab('receive')">
-    <div class="qrmini"><img id="qrmini" alt="Your address as a QR code"></div>
-    <div class="who">
-      <div class="label">Your FierCoin address</div>
-      <div class="addrline" id="addrMini">&hellip;</div>
-      <span class="copy" onclick="event.stopPropagation(); copyAddr()">Copy address</span>
+  <div class="fcard click" id="fcard" onclick="openReceive()">
+    <div class="fc-top"><span class="fc-brand"><img src="logo.png" alt="">FierCoin</span><span class="fc-name" id="fcName"></span></div>
+    <div class="fc-bal" id="bal">0<span class="unit">FIRC</span></div>
+    <div class="fc-bottom">
+      <div>
+        <div class="fc-addr" id="addrMini">&hellip;</div>
+        <span class="fc-copy" id="copyMini" onclick="event.stopPropagation(); copyAddr()">Copy address</span>
+      </div>
+      <div class="fc-qr"><img id="qrmini" alt="Your address as a QR code"></div>
     </div>
   </div>
   <div class="balwrap">
-    <div class="balance" id="bal">0<span class="unit">FIRC</span></div>
     <div class="sub center" id="balSub"></div>
     <div class="status" id="netLine"></div>
     <div class="msg" id="walletErr"></div>
@@ -181,7 +210,7 @@
 
 <div class="actions" id="actionBar">
   <button onclick="tab('send')"><span class="ic">&#8593;</span>Send</button>
-  <button onclick="tab('receive')"><span class="ic">&#8595;</span>Receive</button>
+  <button onclick="openReceive()"><span class="ic">&#8595;</span>Receive</button>
 </div>
 
 <!-- ===================== MINING ===================== -->
@@ -232,15 +261,30 @@
 
 <!-- ===================== RECEIVE ===================== -->
 <div class="screen" id="scr-receive">
-  <div class="back"><button class="alt" onclick="tab('home')">&larr; Back</button><h1>Receive FIRC</h1></div>
+  <div class="back"><button class="alt" onclick="tab('home')">&larr; Back</button><h1>Get paid</h1></div>
   <div class="card" style="text-align:center">
-    <div class="sub" style="margin:0 0 8px">Let them scan this, or send them your address.</div>
-    <div id="qrbox"><img id="qrimg" alt="Your address as a QR code"></div>
-    <div class="addr" id="addr">&hellip;</div>
-    <div class="row2"><button class="alt" onclick="copyAddr()">Copy</button><button class="alt" onclick="Fier.share('My FierCoin address: ' + $('addr').textContent)">Share</button></div>
-    <button class="link" onclick="newAddr()">Make a new address</button>
+    <div id="rcAsk">
+      <div class="sub" style="margin:0 0 8px">Let them scan this, or send them your address.</div>
+      <div id="qrbox"><img id="qrimg" alt="Your address as a QR code"></div>
+      <div class="rc-amt" id="rcAmt"></div>
+      <div class="addr" id="addr">&hellip;</div>
+      <div class="row2"><button class="alt" onclick="copyAddr()">Copy</button><button class="alt" onclick="shareAddr()">Share</button></div>
+      <button class="link" onclick="newAddr()">Make a new address</button>
+    </div>
+    <div class="paid hidden" id="rcPaid">
+      <div class="tick">&#10003;</div>
+      <div class="paid-title">Paid</div>
+      <div class="paid-amt" id="rcPaidAmt"></div>
+    </div>
+    <div id="rcForm">
+      <div class="label" style="text-align:left;margin-top:14px">Charge an amount (optional)</div>
+      <input id="rcInput" inputmode="decimal" placeholder="0" autocomplete="off" oninput="chargeInput()">
+    </div>
+    <div class="rc-status" id="rcStatus"></div>
+    <button class="hidden" id="rcNew" onclick="newCharge()">New charge</button>
     <div class="msg" id="recvMsg"></div>
   </div>
+  <button class="alt" onclick="openPayCard()" style="margin-top:0">Print a pay-me card</button>
 </div>
 
 <!-- ===================== MORE ===================== -->
@@ -315,11 +359,28 @@
   <button class="stop" onclick="stopScan()">Cancel</button>
 </div>
 
+<div id="paycard">
+  <div class="back"><button class="alt" onclick="$('paycard').style.display = 'none'">&larr; Back</button><h1>Pay-me card</h1></div>
+  <div class="card">
+    <div class="sub" style="margin:0 0 8px">Hand it out or put it by your till. People scan it with the FierCoin app to pay you. It shows only your address, never your password or backup.</div>
+    <img class="pc-img" id="pcImg" alt="Your pay-me card">
+    <div class="label">Name on the card (optional)</div>
+    <input id="pcName" maxlength="40" placeholder="Like Maria's Bakery" autocomplete="off" oninput="drawPayCard()">
+    <button onclick="printPayCards()">Print 10 cards</button>
+    <button class="alt" onclick="savePayCard()">Save as a picture</button>
+    <div class="msg" id="pcMsg"></div>
+    <div class="note">Print on plain paper and cut along the dashed lines, or on business-card sheets with 10 cards per page. The print screen can also save it as a PDF.</div>
+  </div>
+</div>
+<div id="printSheet" aria-hidden="true"></div>
+
 <script src="jsQR.js"></script>
 <script src="qrcode.js"></script>
+<script src="fierpay.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 let ready = false, mining = false, polling = null, peerCount = 0, spendable = 0, startedAt = 0;
+let charge = null; // "Charge an amount" on the Receive screen
 
 // ---------- basics ----------
 function call(method, params, wallet) {
@@ -345,6 +406,7 @@ function duration(sec) {
 
 // ---------- tabs ----------
 function tab(name) {
+  if (name !== 'receive') charge = null; // leaving the Receive screen ends a charge
   for (const s of document.querySelectorAll('.screen')) s.classList.toggle('on', s.id === 'scr-' + name);
   const navName = (name === 'send' || name === 'receive') ? 'home' : name;
   for (const b of document.querySelectorAll('nav button')) b.classList.toggle('on', b.id === 'tab-' + navName);
@@ -413,16 +475,18 @@ function ensureWallet() {
   if (!mine) a = call('getnewaddress', ['', 'bech32'], true); // never use an address this wallet can't spend from
   localStorage.setItem(addrKey(), a);
   renderWalletPicker();
+  const n = W();
+  $('fcName').textContent = n === 'phone' ? 'My wallet' : (n.indexOf('restored-') === 0 ? 'Restored ' + n.slice(9) : n.replace(/[-_]/g, ' '));
   setAddr(a);
 }
 function setAddr(a) {
   $('addr').textContent = a;
-  $('addrMini').textContent = a;
+  $('addrMini').textContent = shortAddr(a);
   try {
-    const q = qrcode(0, 'M'); q.addData('fiercoin:' + a); q.make();
-    $('qrimg').src = q.createDataURL(8, 2);
+    const q = qrcode(0, 'M'); q.addData(FierPay.payUri(a)); q.make();
     $('qrmini').src = q.createDataURL(3, 1);
-  } catch (e) { $('qrbox').style.display = 'none'; }
+  } catch (e) {}
+  drawReceiveQr();
 }
 
 // ---------- refresh everything ----------
@@ -441,13 +505,14 @@ function refresh() {
 
   try { renderMining(blocks); } catch (e) {}
 
-  let all = [];
+  let all = [], gotTxs = false;
   try {
     const b = call('getbalances', [], true).mine;
     spendable = b.trusted;
     $('bal').innerHTML = esc(fmt(b.trusted)) + '<span class="unit">FIRC</span>';
     $('canSend').textContent = fmt(b.trusted);
     all = call('listtransactions', ['*', 200], true);
+    gotTxs = true;
     const waiting = all.filter(t => t.category === 'immature');
     let sub = [];
     if (b.immature > 0) {
@@ -465,6 +530,7 @@ function refresh() {
   renderActivity(all);
   renderSetup();
   renderNodes();
+  if (gotTxs) checkCharge(all);
 }
 
 // ---------- activity (History) ----------
@@ -589,11 +655,108 @@ function pasteAddr() {
 }
 function copyAddr() {
   Fier.copy($('addr').textContent); show('recvMsg', 'Copied! Paste it to whoever is paying you.');
-  const c = document.querySelector('.acct .copy'); c.textContent = 'Copied \u2713'; setTimeout(() => { c.textContent = 'Copy address'; }, 2000);
+  const c = $('copyMini'); c.textContent = 'Copied \u2713'; setTimeout(() => { c.textContent = 'Copy address'; }, 2000);
+}
+function shareAddr() {
+  const a = $('addr').textContent;
+  Fier.share(charge ? 'Please send ' + FierPay.plainAmount(charge.sats) + ' FIRC to my FierCoin address: ' + a : 'My FierCoin address: ' + a);
 }
 function newAddr() {
-  try { const a = call('getnewaddress', ['', 'bech32'], true); localStorage.setItem(addrKey(), a); setAddr(a); show('recvMsg', 'New address made. Your old addresses still work too.'); }
-  catch (e) { show('recvMsg', e.message, false); }
+  try {
+    const a = call('getnewaddress', ['', 'bech32'], true); localStorage.setItem(addrKey(), a);
+    charge = null; $('rcInput').value = ''; chargeStatus(CHARGE_HELP); setAddr(a);
+    show('recvMsg', 'New address made. Your old addresses still work too.');
+  } catch (e) { show('recvMsg', e.message, false); }
+}
+
+// ---------- get paid: the QR code can ask for an amount, and the screen shows when it's paid ----------
+const CHARGE_HELP = 'Type a price and the QR code asks for it. This screen shows when it\u2019s paid.';
+function toSats(s) {
+  s = String(s).trim().replace(',', '.');
+  if (!/^\d+(\.\d{1,8})?$/.test(s)) return 0;
+  const [a, b = ''] = s.split('.');
+  return Number(a) * 1e8 + Number((b + '00000000').slice(0, 8));
+}
+function drawReceiveQr() {
+  const sats = charge ? charge.sats : 0;
+  try { const q = qrcode(0, 'M'); q.addData(FierPay.payUri($('addr').textContent, sats)); q.make(); $('qrimg').src = q.createDataURL(8, 2); }
+  catch (e) { $('qrbox').style.display = 'none'; }
+  $('rcAmt').textContent = sats ? fmt(sats / 1e8) + ' FIRC' : '';
+}
+function chargeView(paid) {
+  $('rcAsk').classList.toggle('hidden', paid); $('rcForm').classList.toggle('hidden', paid);
+  $('rcPaid').classList.toggle('hidden', !paid); $('rcNew').classList.toggle('hidden', !paid);
+}
+function chargeStatus(text, cls) { $('rcStatus').textContent = text; $('rcStatus').className = 'rc-status' + (cls ? ' ' + cls : ''); }
+function openReceive() { charge = null; $('rcInput').value = ''; chargeView(false); drawReceiveQr(); chargeStatus(CHARGE_HELP); tab('receive'); }
+function newCharge() { openReceive(); $('rcInput').focus(); }
+// Payments into this address that this wallet sees (not mined coins, not ones that were cancelled).
+function receivedHere(all, addr) { return all.filter(t => t.category === 'receive' && t.address === addr && (t.confirmations || 0) >= 0); }
+function chargeInput() {
+  charge = null;
+  const raw = $('rcInput').value.trim(), sats = raw ? toSats(raw) : 0;
+  drawReceiveQr();
+  if (!raw) return chargeStatus(CHARGE_HELP);
+  if (!(sats >= 10000)) return chargeStatus('Type an amount like 2.5 (at least 0.0001 FIRC).', 'bad');
+  const addr = $('addr').textContent;
+  let seen;
+  try { seen = new Set(receivedHere(call('listtransactions', ['*', 200], true), addr).map(t => t.txid + ':' + t.vout)); } // already here: doesn't count
+  catch (e) { return chargeStatus('Can\u2019t check for the payment right now. ' + (e.message || e), 'bad'); }
+  charge = { sats, addr, seen, paid: false };
+  drawReceiveQr();
+  chargeStatus('Waiting for ' + fmt(sats / 1e8) + ' FIRC\u2026', 'wait');
+}
+function checkCharge(all) { // runs with every refresh (every 4 seconds)
+  const c = charge;
+  if (!c) return;
+  const fresh = receivedHere(all, c.addr).filter(t => !c.seen.has(t.txid + ':' + t.vout));
+  const got = fresh.reduce((s, t) => s + Math.round(t.amount * 1e8), 0);
+  if (got >= c.sats) {
+    c.paid = true; chargeView(true);
+    $('rcPaidAmt').textContent = fmt(got / 1e8) + ' FIRC';
+    if (fresh.every(t => t.confirmations > 0)) { chargeStatus('Confirmed by the network.'); charge = null; }
+    else chargeStatus('On its way. The network confirms it in about 2.5 minutes. For a big amount, wait for that.', 'wait');
+  } else if (c.paid) {
+    c.paid = false; chargeView(false);
+    chargeStatus('That payment was cancelled before it was confirmed. Don\u2019t hand anything over. Waiting for ' + fmt((c.sats - got) / 1e8) + ' FIRC\u2026', 'bad');
+  } else if (got) {
+    chargeStatus('Got ' + fmt(got / 1e8) + ' of ' + fmt(c.sats / 1e8) + ' FIRC. Waiting for ' + fmt((c.sats - got) / 1e8) + ' FIRC more\u2026', 'wait');
+  }
+}
+
+// ---------- pay-me card: print 10, or save one as a picture ----------
+// The logo comes as a data: picture. One loaded from file:// would block saving the card.
+let cardLogo = null;
+function payCardCanvas(noLogo) {
+  if (!cardLogo) {
+    cardLogo = new Image();
+    cardLogo.onload = () => { if ($('paycard').style.display === 'block') drawPayCard(); };
+    try { cardLogo.src = Fier.assetDataUrl('logo.png'); } catch (e) {}
+  }
+  return FierPay.drawCard(document.createElement('canvas'), { address: $('addr').textContent, name: $('pcName').value, logo: noLogo ? null : cardLogo, qrcode });
+}
+function cardPng() {
+  try { return payCardCanvas().toDataURL('image/png'); } catch (e) { return payCardCanvas(true).toDataURL('image/png'); } // drawn F instead of the logo
+}
+function openPayCard() {
+  $('pcName').value = localStorage.getItem('cardname:' + $('addr').textContent) || '';
+  $('pcMsg').style.display = 'none';
+  drawPayCard();
+  $('paycard').style.display = 'block'; $('paycard').scrollTop = 0;
+}
+function drawPayCard() {
+  const key = 'cardname:' + $('addr').textContent, name = $('pcName').value.trim();
+  if (name) localStorage.setItem(key, name); else localStorage.removeItem(key);
+  $('pcImg').src = cardPng();
+}
+function printPayCards() {
+  $('printSheet').innerHTML = ('<div><img alt="" src="' + cardPng() + '"></div>').repeat(10);
+  Promise.all([...$('printSheet').querySelectorAll('img')].map(i => i.decode().catch(() => {})))
+    .then(() => Fier.print('FierCoin pay-me cards')); // Android's print screen: a printer, or Save as PDF
+}
+function savePayCard() {
+  const r = Fier.saveImage(cardPng().split(',')[1], 'fiercoin-pay-me-card.png');
+  show('pcMsg', r, r.indexOf('Saved') === 0);
 }
 
 // ---------- send ----------

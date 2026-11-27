@@ -8,6 +8,7 @@ on:
     paths:
       - "fiercoin-release/mesh-gateway/**"
       - "fiercoin-release/explorer/**"
+      - "fiercoin-release/android-app/assets/fierpay.js"
       - "fiercoin-release/server/bin/fiercoin-explorer"
       - "fiercoin-site/download/FierCoin-Explorer.exe"
       - ".github/workflows/fiercoin-mesh-test.yml"

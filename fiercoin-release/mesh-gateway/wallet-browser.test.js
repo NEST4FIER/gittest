@@ -234,6 +234,108 @@ test('fake radio answers: changed amounts, forged "not sent", mixed answers, coi
   });
 });
 
+test('the pay-me card code is the same in the web wallet and the Android app', () => {
+  const web = fs.readFileSync(path.join(WEB, 'wallet/fierpay.js'));
+  const app = fs.readFileSync(path.join(__dirname, '../android-app/assets/fierpay.js'));
+  assert.ok(web.equals(app), 'copy explorer/web/wallet/fierpay.js to android-app/assets/fierpay.js');
+});
+
+// Reads a QR code on the page with the same scanner code the wallet uses.
+const readQr = (b, sel) => b.evaluate(`(async () => {
+  const xml = new XMLSerializer().serializeToString(document.querySelector(${JSON.stringify(sel)}));
+  const img = new Image(); img.src = 'data:image/svg+xml;base64,' + btoa(xml); await img.decode();
+  const c = document.createElement('canvas'); c.width = c.height = 400;
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 400, 400); g.drawImage(img, 20, 20, 360, 360);
+  const code = jsQR(g.getImageData(0, 0, 400, 400).data, 400, 400);
+  return code && code.data;
+})()`);
+
+test('wallet card, charging an amount, and the printable pay-me card', { skip: !exe && 'no Edge/Chrome/Chromium found' }, async () => {
+  const S = { utxos: [] };
+  await withWallet(S, async (b) => {
+    await b.evaluate(`(async () => { show('s-restore'); $('r-words').value = '${WORDS}'; $('r-pass').value = 'secret1'; await restore(); })()`);
+    const addr = V.coins.address;
+    // The wallet shows as a card with its name, a short address and a QR code of the address.
+    assert.equal(await b.evaluate("$('fc-name').textContent"), 'My wallet');
+    assert.equal(await b.evaluate("$('addr-mini').textContent"), addr.slice(0, 10) + '…' + addr.slice(-6));
+    assert.equal(await readQr(b, '#qrmini svg'), 'fiercoin:' + addr);
+
+    // Charge 2.5 FIRC: the QR code asks for it (the scanner fills in the amount from this).
+    await b.evaluate("openReceive(); $('rc-input').value = '2.5'; chargeInput()");
+    assert.equal(await readQr(b, '#qr svg'), 'fiercoin:' + addr + '?amount=2.5');
+    await until(b.evaluate, "/Waiting for 2\\.5 FIRC/.test($('rc-status').textContent)", 'the charge to start');
+    // A freshly mined coin is not a payment.
+    S.utxos = [{ txid: 'aa'.repeat(32), vout: 0, value: 50e8, height: 100, coinbase: true, mature: false }];
+    await new Promise((r) => setTimeout(r, 3500));
+    assert.equal(await b.evaluate("$('rc-paid').style.display"), 'none');
+    // Part of it, then the rest (not confirmed yet): Paid.
+    S.utxos.push({ txid: 'bb'.repeat(32), vout: 1, value: 1e8, height: 0, coinbase: false, mature: true });
+    await until(b.evaluate, "/Got 1 of 2\\.5 FIRC/.test($('rc-status').textContent)", 'a part payment');
+    S.utxos.push({ txid: 'cc'.repeat(32), vout: 0, value: 1.5e8, height: 0, coinbase: false, mature: true });
+    await until(b.evaluate, "$('rc-paid').style.display === 'block'", 'Paid');
+    assert.equal(await b.evaluate("$('rc-paid-amt').textContent"), '2.5 FIRC');
+    assert.match(await b.evaluate("$('rc-status').textContent"), /about 2\.5 minutes/);
+    await b.shot('3-paid');
+    // The payment disappears before it confirms (spent twice): no longer Paid, with a warning.
+    S.utxos.pop();
+    await until(b.evaluate, "/cancelled/.test($('rc-status').textContent)", 'the cancelled-payment warning', 20000);
+    assert.equal(await b.evaluate("$('rc-paid').style.display"), 'none');
+    // Paid again, and confirmed in a block.
+    S.utxos[1].height = 101;
+    S.utxos.push({ txid: 'dd'.repeat(32), vout: 0, value: 1.5e8, height: 101, coinbase: false, mature: true });
+    await until(b.evaluate, "/Confirmed/.test($('rc-status').textContent)", 'Confirmed', 20000);
+    // Leaving the screen ends the charge.
+    await b.evaluate("tab('s-home')");
+    assert.equal(await b.evaluate('charge'), null);
+
+    // Pay-me card: 3.5 x 2 in at 300 dots per inch, its QR code has the address (no amount).
+    await b.evaluate("openPayCard(); $('pc-name').value = 'Test Shop'; drawPayCard()");
+    const card = await b.evaluate(`(() => { const c = payCardCanvas(); const code = jsQR(c.getContext('2d').getImageData(0, 0, c.width, c.height).data, c.width, c.height);
+      return { w: c.width, h: c.height, qr: code && code.data }; })()`);
+    assert.deepEqual(card, { w: 1050, h: 600, qr: 'fiercoin:' + addr });
+    assert.equal(await b.evaluate("localStorage.getItem('firc.cardname.' + wallet.address)"), 'Test Shop');
+    await b.shot('4-pay-me-card');
+    // Printing: a sheet of 10 cards, and nothing else from the wallet.
+    await b.evaluate('window.__printed = 0; window.print = () => { window.__printed++; }; printPayCards()');
+    await until(b.evaluate, 'window.__printed === 1', 'the print window');
+    assert.equal(await b.evaluate("$('printSheet').querySelectorAll('img').length"), 10);
+    await b.page('Emulation.setEmulatedMedia', { media: 'print' });
+    assert.equal(await b.evaluate("getComputedStyle($('printSheet')).display"), 'grid');
+    assert.equal(await b.evaluate("getComputedStyle(document.querySelector('.top')).display"), 'none');
+    assert.equal(await b.evaluate("getComputedStyle($('ov-paycard')).display"), 'none');
+    await b.page('Emulation.setEmulatedMedia', { media: '' });
+
+    // On an iPhone home screen, printing can't open, so the share menu gets a PDF of the sheet.
+    const shared = async (call) => b.evaluate(`(async () => {
+      isIOS = () => true; standalone = () => true;
+      let got = null;
+      Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
+      Object.defineProperty(navigator, 'share', { configurable: true, value: async (d) => { got = d.files[0]; } });
+      ${call};
+      for (let i = 0; i < 50 && !got; i++) await new Promise((r) => setTimeout(r, 20));
+      const bytes = new Uint8Array(await got.arrayBuffer());
+      return { name: got.name, type: got.type, b64: btoa(Array.from(bytes, (x) => String.fromCharCode(x)).join('')) };
+    })()`);
+    const pdf = await shared('printPayCards()');
+    assert.equal(pdf.name, 'FierCoin-pay-me-cards.pdf');
+    assert.equal(pdf.type, 'application/pdf');
+    const t = Buffer.from(pdf.b64, 'base64').toString('latin1');
+    assert.ok(t.startsWith('%PDF-1.4\n') && t.endsWith('%%EOF\n'));
+    assert.equal(t.match(/\/Card Do/g).length, 10);
+    assert.match(t, /\/MediaBox \[0 0 612 792\]/);
+    assert.match(t, /\/Width 1050 \/Height 600 /);
+    const xref = Number(t.match(/startxref\n(\d+)\n%%EOF\n$/)[1]);
+    assert.equal(t.slice(xref, xref + 5), 'xref\n');
+    const offs = [...t.slice(xref).matchAll(/^(\d{10}) 00000 n $/gm)].map((m) => Number(m[1]));
+    assert.equal(offs.length, 6);
+    offs.forEach((o, i) => assert.equal(t.slice(o, o + 8), `${i + 1} 0 obj\n`));
+    // Save as a picture: a PNG of one card.
+    const png = await shared('savePayCard()');
+    assert.equal(png.name, 'FierCoin-pay-me-card.png');
+    assert.equal(Buffer.from(png.b64, 'base64').subarray(1, 4).toString(), 'PNG');
+  });
+});
+
 test('offline copy: a server error page or a slow update never breaks the wallet', { skip: !exe && 'no Edge/Chrome/Chromium found' }, async () => {
   const S = {};
   await withWallet(S, async (b) => {

@@ -1,8 +1,8 @@
 // Keeps a copy of the wallet on the phone, so it still opens with no internet
 // (to pay over mesh radio). Live data from /api/ always comes from the network.
 const CACHE = 'firc-wallet-v1';
-const FILES = ['./', 'index.html', 'firc-lib.js', 'mesh.js', 'qrcode.js', 'jsQR.js', 'miner.js',
-  'manifest.json', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
+const FILES = ['./', 'index.html', 'firc-lib.js', 'mesh.js', 'fierpay.js', 'qrcode.js', 'jsQR.js', 'miner.js',
+  'manifest.json', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'coin.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
