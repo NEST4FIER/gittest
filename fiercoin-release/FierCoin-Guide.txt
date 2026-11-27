@@ -258,11 +258,28 @@ Running a gateway: see "mesh-gateway/README.md" in the FierCoin source.
 SENDING AND RECEIVING
 ---------------------
 - To get paid: give people your "firc1..." address. On the PC it's on the Receive tab.
-  On a phone, tap "Receive" and let them scan your QR code.
+  On a phone, tap your FierCoin card (or "Receive") and let them scan your QR code.
 - To pay someone on the PC: Send tab, paste their address and the amount, then click Send.
   On a phone: tap "Send", scan their QR code (or paste their address), type the amount, tap "Send".
 - Sending is final, so check the address before you send.
 - Freshly mined coins can be sent once 100 more blocks are found (about 4 hours).
+
+Charging an amount, like a card machine (phone apps):
+1. Tap your FierCoin card (or "Receive") and type the price under "Charge an amount".
+2. The QR code now asks for that amount. When they scan it, the amount fills in by itself.
+3. Wait for the big green "Paid". It shows a few seconds after they pay.
+   "On its way" means the network hasn't confirmed it yet (that takes about 2.5 minutes).
+   For a big amount, wait until it says "Confirmed by the network".
+If it says the payment was cancelled, the money didn't arrive. Don't hand anything over.
+
+Pay-me cards (phone apps):
+On the Receive screen, tap "Print a pay-me card". Add a name if you like, such as your shop's
+name. Each card shows your address and its QR code, so people can pay you by scanning it.
+- "Print 10 cards" prints a page of business cards. Cut along the dashed lines, or use
+  business-card sheets with 10 cards per page.
+  On iPhone it opens the share menu with a PDF: tap "Print" there, or "Save to Files".
+- "Save as a picture" saves one card, to send to people or print later.
+The card shows only your address, never your 12 words or password. Losing one is safe.
 
 
 SEE EVERY BLOCK AND PAYMENT (the explorer)

@@ -71,4 +71,12 @@ public class MainActivity extends Activity {
         moveTaskToBack(true); // keep the node running when leaving the app
     }
 
+    /** Android's print screen for the page (a printer, or Save as PDF). */
+    void printPage(String title) {
+        android.print.PrintManager pm = (android.print.PrintManager) getSystemService(PRINT_SERVICE);
+        if (pm == null || web == null) return;
+        String name = title == null || title.isEmpty() ? "FierCoin" : title;
+        pm.print(name, web.createPrintDocumentAdapter(name), new android.print.PrintAttributes.Builder().build());
+    }
+
 }

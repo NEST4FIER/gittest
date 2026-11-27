@@ -35,8 +35,6 @@
   .card { background:var(--card); border-radius:6px; padding:14px; margin:12px 0; }
   .card h2 { font-size:13px; margin:0 0 8px; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; }
   .label { color:var(--muted); font-size:13px; text-transform:uppercase; letter-spacing:.6px; }
-  .balance { font-size:40px; font-weight:300; letter-spacing:-0.5px; margin:2px 0; word-break:break-all; text-align:center; }
-  .balance small { font-size:20px; color:var(--muted); }
   .muted { color:var(--muted); } .small { font-size:13px; } .center { text-align:center; }
   .row { display:flex; gap:10px; } .row > * { flex:1; }
   button.btn { display:block; width:100%; border:0; border-radius:4px; padding:14px; font-weight:700; font-size:15px; letter-spacing:.8px; text-transform:uppercase; font-family:inherit; color:#fff; background:var(--fire); margin:10px 0; }
@@ -50,14 +48,43 @@
   .addr { font-family:ui-monospace, Menlo, monospace; font-size:14px; word-break:break-all; padding:8px 0; }
   .qr { background:#fff; border-radius:4px; padding:12px; width:260px; height:260px; margin:8px auto 14px; display:flex; align-items:center; justify-content:center; }
   .qr img, .qr svg { width:100%; height:100%; }
-  .acct { display:flex; gap:14px; align-items:center; padding:14px; background:var(--card); border-radius:6px; margin:12px 0; cursor:pointer; }
-  .acct .qrmini { background:#fff; padding:5px; border-radius:3px; flex:none; width:98px; height:98px; }
-  .acct .qrmini svg { width:100%; height:100%; display:block; }
-  .acct .who { min-width:0; flex:1; }
-  .acct .addrline { font-family:ui-monospace, Menlo, monospace; font-size:13px; word-break:break-all; margin:4px 0 6px; }
-  .acct .copy { color:var(--fire); font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; }
-  .balwrap { text-align:center; padding:18px 0 8px; }
+  .balwrap { text-align:center; padding:6px 0 4px; }
   .status { color:var(--muted); font-size:13px; margin-top:6px; }
+  /* The wallet as a card. Tap it to get paid. */
+  .fcard { position:relative; overflow:hidden; aspect-ratio:1.586; max-width:400px; margin:14px auto 6px; border-radius:16px; padding:16px 18px 14px; color:#fff; cursor:pointer;
+           background:radial-gradient(120% 90% at 100% 0%, rgba(255,143,0,.55) 0%, rgba(255,143,0,0) 55%), linear-gradient(140deg, #d84315 0%, #a8320f 50%, #5a1406 100%);
+           box-shadow:0 10px 30px rgba(216,67,21,.22); display:flex; flex-direction:column; justify-content:space-between; gap:8px; }
+  .fc-top { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .fc-brand { display:flex; align-items:center; gap:8px; font-weight:700; font-size:17px; }
+  .fc-brand img { width:26px; height:26px; }
+  .fc-name { font-size:12px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; background:rgba(0,0,0,.28); padding:4px 8px; border-radius:4px; max-width:55%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .fc-bal { font-size:34px; font-weight:400; letter-spacing:-.5px; line-height:1.1; overflow-wrap:anywhere; }
+  .fc-bal small { font-size:15px; font-weight:700; letter-spacing:.6px; margin-left:4px; opacity:.85; }
+  .fc-bottom { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; }
+  .fc-addr { font-family:ui-monospace, Menlo, monospace; font-size:14px; letter-spacing:.4px; }
+  .fc-copy { display:inline-block; margin-top:6px; font-size:12px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,.5); }
+  .fc-qr { background:#fff; border-radius:6px; padding:4px; width:74px; height:74px; flex:none; }
+  .fc-qr svg { width:100%; height:100%; display:block; }
+  /* Get paid: charge an amount */
+  .rc-amt { font-size:28px; font-weight:400; margin:-4px 0 2px; }
+  .rc-status { color:var(--muted); text-align:left; min-height:20px; }
+  .rc-status.wait { color:var(--warn); } .rc-status.bad { color:var(--bad); }
+  .paid { padding:6px 0 0; }
+  .paid .tick { width:108px; height:108px; border-radius:50%; background:var(--ok); color:#000; font-size:62px; line-height:108px; font-weight:700; margin:8px auto 12px; }
+  .paid-title { font-size:15px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--ok); }
+  .paid-amt { font-size:34px; font-weight:300; margin:4px 0; }
+  .pc-img { width:100%; display:block; border-radius:6px; background:#fff; margin:6px 0 14px; }
+  /* Printing: only the sheet of pay-me cards (10 per page, 3.5 x 2 in each) */
+  #printSheet { display:none; }
+  @media print {
+    @page { margin:0.5in; }
+    html, body { background:#fff !important; }
+    body { padding:0 !important; margin:0 !important; max-width:none !important; }
+    body > :not(#printSheet) { display:none !important; }
+    #printSheet { display:grid !important; grid-template-columns:3.5in 3.5in; grid-auto-rows:2in; width:7in; margin:0 auto; }
+    #printSheet div { outline:0.6pt dashed #999; outline-offset:-0.3pt; overflow:hidden; break-inside:avoid; }
+    #printSheet img { width:3.5in; height:2in; display:block; }
+  }
   .actions { position:fixed; left:0; right:0; bottom:0; display:flex; gap:1px; background:var(--line); z-index:6; padding-bottom:env(safe-area-inset-bottom); max-width:560px; margin:0 auto; }
   .actions button { flex:1; border:0; border-radius:0; padding:18px 8px; background:#141414; color:var(--text); font-weight:700; font-size:15px; letter-spacing:.8px; text-transform:uppercase; font-family:inherit; display:flex; align-items:center; justify-content:center; gap:10px; }
   .actions .ic { font-size:22px; color:var(--fire); }
@@ -174,16 +201,18 @@
 </nav>
 
 <section class="screen" id="s-home">
-  <div class="acct" onclick="show('s-receive')">
-    <div class="qrmini" id="qrmini"></div>
-    <div class="who">
-      <div class="label">Your FierCoin address</div>
-      <div class="addrline" id="addr-mini"></div>
-      <span class="copy" id="copy-mini" onclick="event.stopPropagation(); copyAddr()">Copy address</span>
+  <div class="fcard" id="fcard" role="button" aria-label="Your FierCoin card. Tap to get paid." onclick="openReceive()">
+    <div class="fc-top"><span class="fc-brand"><img id="fc-logo" src="coin.png" alt="">FierCoin</span><span class="fc-name" id="fc-name"></span></div>
+    <div class="fc-bal" id="bal">…</div>
+    <div class="fc-bottom">
+      <div>
+        <div class="fc-addr" id="addr-mini"></div>
+        <span class="fc-copy" id="copy-mini" onclick="event.stopPropagation(); copyAddr()">Copy address</span>
+      </div>
+      <div class="fc-qr" id="qrmini"></div>
     </div>
   </div>
   <div class="balwrap">
-    <div class="balance" id="bal">…</div>
     <div class="muted small" id="bal-extra"></div>
     <div class="status" id="net-line"></div>
   </div>
@@ -200,20 +229,35 @@
 
 <div class="actions" id="actionBar" style="display:none">
   <button onclick="openSend()"><span class="ic">&#8593;</span>Send</button>
-  <button onclick="show('s-receive')"><span class="ic">&#8595;</span>Receive</button>
+  <button onclick="openReceive()"><span class="ic">&#8595;</span>Receive</button>
 </div>
 
 <section class="screen" id="s-receive">
   <div class="card" style="text-align:center">
-    <h2>Your FierCoin address</h2>
-    <div class="qr" id="qr"></div>
-    <div class="addr" id="my-addr"></div>
-    <div class="row">
-      <button class="btn alt" onclick="copyAddr()">Copy</button>
-      <button class="btn alt" onclick="shareAddr()">Share</button>
+    <div id="rc-ask">
+      <h2>Get paid</h2>
+      <div class="qr" id="qr"></div>
+      <div class="rc-amt" id="rc-amt"></div>
+      <div class="addr" id="my-addr"></div>
+      <div class="row">
+        <button class="btn alt" onclick="copyAddr()">Copy</button>
+        <button class="btn alt" onclick="shareAddr()">Share</button>
+      </div>
     </div>
-    <p class="muted small">Anyone can send FIRC to this address. It's safe to share.</p>
+    <div class="paid" id="rc-paid" style="display:none">
+      <div class="tick">&#10003;</div>
+      <div class="paid-title">Paid</div>
+      <div class="paid-amt" id="rc-paid-amt"></div>
+    </div>
+    <div id="rc-form">
+      <div class="label" style="text-align:left;margin-top:14px">Charge an amount (optional)</div>
+      <input id="rc-input" inputmode="decimal" placeholder="0" autocomplete="off" oninput="chargeInput()">
+    </div>
+    <div class="small rc-status" id="rc-status"></div>
+    <button class="btn" id="rc-new" style="display:none" onclick="newCharge()">New charge</button>
+    <p class="muted small" style="margin-bottom:0">Anyone can send FIRC to this address. It's safe to share.</p>
   </div>
+  <button class="btn alt" onclick="openPayCard()">Print a pay-me card</button>
   <button class="btn alt" onclick="tab('s-home')">Back</button>
 </section>
 
@@ -343,18 +387,34 @@
     <button class="btn alt" onclick="closeOv('ov-mesh'); tab('s-mesh')">Close</button>
   </div>
 </div>
+<div class="overlay" id="ov-paycard">
+  <div class="card" style="max-height:92vh;overflow-y:auto">
+    <h2>Pay-me card</h2>
+    <p class="small" style="margin-top:0">Hand it out or put it by your till. People scan it with the FierCoin app to pay you. It shows only your address, never your 12 words.</p>
+    <img class="pc-img" id="pc-img" alt="Your pay-me card">
+    <div class="label">Name on the card (optional)</div>
+    <input id="pc-name" maxlength="40" placeholder="Like Maria's Bakery" autocomplete="off" oninput="drawPayCard()">
+    <button class="btn" onclick="printPayCards()">Print 10 cards</button>
+    <button class="btn alt" onclick="savePayCard()">Save as a picture</button>
+    <p class="muted small" id="pc-hint">Print on plain paper and cut along the dashed lines, or on business-card sheets with 10 cards per page.</p>
+    <button class="btn alt" onclick="closeOv('ov-paycard')">Close</button>
+  </div>
+</div>
 <div id="toast"></div>
+<div id="printSheet" aria-hidden="true"></div>
 
 <script src="firc-lib.js"></script>
 <script src="qrcode.js"></script>
 <script src="jsQR.js"></script>
 <script src="mesh.js"></script>
+<script src="fierpay.js"></script>
 <script>
 'use strict';
 const API = '/api';
 const COIN = 100000000;
 const FEE_RATE = 5; // satoshis per virtual byte (the network minimum is 1)
 let NET = 'main', wallet = null, utxos = [], mining = false, workers = [], miningJob = null;
+let charge = null, chargeTimer = null; // "Charge an amount" on the Receive screen
 
 // ---------- small helpers ----------
 const $ = (id) => document.getElementById(id);
@@ -369,6 +429,7 @@ async function api(path, body) {
   return j;
 }
 function show(id) {
+  if (id !== 's-receive') stopCharge(); // leaving the Receive screen ends a charge
   document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('on', s.id === id));
   $('actionBar').style.display = wallet && (id === 's-home' || id === 's-history') ? 'flex' : 'none';
   window.scrollTo(0, 0);
@@ -510,11 +571,12 @@ async function removeWallet() {
 function openWallet() {
   $('tabs').style.display = 'flex';
   $('my-addr').textContent = wallet.address;
-  $('addr-mini').textContent = wallet.address;
+  $('addr-mini').textContent = shortAddr(wallet.address);
+  $('fc-name').textContent = wallet.name || 'My wallet';
   $('scanTop').style.display = 'flex';
-  const qr = qrcode(0, 'M'); qr.addData('fiercoin:' + wallet.address); qr.make();
-  $('qr').innerHTML = qr.createSvgTag(6, 0);
+  const qr = qrcode(0, 'M'); qr.addData(FierPay.payUri(wallet.address)); qr.make();
   $('qrmini').innerHTML = qr.createSvgTag(3, 0);
+  stopCharge(); drawReceiveQr();
   $('backup-nag').style.display = wallet.backedUp ? 'none' : 'block';
   $('m-found').textContent = store('firc.found') || '0';
   renderWalletPicker();
@@ -561,7 +623,107 @@ function pasteAddr() {
   if (navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then((t) => { $('to').value = t.trim(); }, () => toast('Press and hold in the box, then tap Paste.'));
   else toast('Press and hold in the box, then tap Paste.');
 }
-function shareAddr() { if (navigator.share) navigator.share({ title: 'My FierCoin address', text: wallet.address }).catch(() => {}); else copyAddr(); }
+function shareAddr() {
+  const text = charge ? 'Please send ' + FierPay.plainAmount(charge.sats) + ' FIRC to my FierCoin address: ' + wallet.address : wallet.address;
+  if (navigator.share) navigator.share({ title: 'My FierCoin address', text }).catch(() => {}); else copyAddr();
+}
+function shortAddr(a) { return a.length > 20 ? a.slice(0, 10) + '…' + a.slice(-6) : a; }
+
+// ---------- get paid: the QR code can ask for an amount, and the screen shows when it's paid ----------
+const CHARGE_HELP = 'Type a price and the QR code asks for it. This screen shows when it’s paid.';
+function drawReceiveQr() {
+  const sats = charge ? charge.sats : 0;
+  const q = qrcode(0, 'M'); q.addData(FierPay.payUri(wallet.address, sats)); q.make();
+  $('qr').innerHTML = q.createSvgTag(6, 0);
+  $('rc-amt').textContent = sats ? fmt(sats) + ' FIRC' : '';
+}
+function chargeView(paid) {
+  $('rc-ask').style.display = $('rc-form').style.display = paid ? 'none' : 'block';
+  $('rc-paid').style.display = $('rc-new').style.display = paid ? 'block' : 'none';
+}
+function chargeStatus(text, cls) { $('rc-status').textContent = text; $('rc-status').className = 'small rc-status' + (cls ? ' ' + cls : ''); }
+function stopCharge() { clearTimeout(chargeTimer); chargeTimer = null; charge = null; }
+function openReceive() {
+  stopCharge(); $('rc-input').value = ''; chargeView(false); drawReceiveQr(); chargeStatus(CHARGE_HELP);
+  show('s-receive');
+}
+function newCharge() { openReceive(); $('rc-input').focus(); }
+function chargeInput() {
+  stopCharge();
+  const raw = $('rc-input').value.trim(), sats = raw ? parseAmount(raw) : 0;
+  drawReceiveQr();
+  if (!raw) return chargeStatus(CHARGE_HELP);
+  if (!(sats >= 10000)) return chargeStatus('Type an amount like 2.5 (at least 0.0001 FIRC).', 'bad');
+  const c = charge = { sats, seen: null, paid: false };
+  drawReceiveQr();
+  chargeStatus('Getting ready…');
+  chargeTimer = setTimeout(() => watchCharge(c), 700); // once typing stops
+}
+const coinKey = (o) => o.txid + ':' + o.vout;
+// Watches the address: coins that arrive after the charge started (not mined ones) count as the payment.
+async function watchCharge(c) {
+  if (charge !== c) return;
+  let u = null;
+  try { u = await api('/utxos/' + wallet.address); } catch (e) { if (charge === c) chargeStatus('Can’t check for the payment right now. ' + e.message, 'bad'); }
+  if (charge !== c) return;
+  if (u && !c.seen) {
+    c.seen = new Set(u.utxos.map(coinKey)); // coins already here don't count
+    chargeStatus('Waiting for ' + fmt(c.sats) + ' FIRC…', 'wait');
+  } else if (u) {
+    const fresh = u.utxos.filter((o) => !o.coinbase && !c.seen.has(coinKey(o)));
+    const got = fresh.reduce((s, o) => s + o.value, 0);
+    if (got >= c.sats) {
+      const confirmed = fresh.every((o) => o.height > 0);
+      c.paid = true; chargeView(true);
+      $('rc-paid-amt').textContent = fmt(got) + ' FIRC';
+      if (confirmed) { chargeStatus('Confirmed by the network.'); chargeTimer = null; refresh(); return; }
+      chargeStatus('On its way. The network confirms it in about 2.5 minutes. For a big amount, wait for that.', 'wait');
+    } else if (c.paid) {
+      c.paid = false; chargeView(false);
+      chargeStatus('That payment was cancelled before it was confirmed. Don’t hand anything over. Waiting for ' + fmt(c.sats - got) + ' FIRC…', 'bad');
+    } else if (got) {
+      chargeStatus('Got ' + fmt(got) + ' of ' + fmt(c.sats) + ' FIRC. Waiting for ' + fmt(c.sats - got) + ' FIRC more…', 'wait');
+    }
+  }
+  chargeTimer = setTimeout(() => watchCharge(c), c.paid ? 10000 : 3000);
+}
+
+// ---------- pay-me card: print 10, or save one as a picture ----------
+function payCardCanvas() { // the logo is the coin picture already shown on the wallet card
+  return FierPay.drawCard(document.createElement('canvas'), { address: wallet.address, name: $('pc-name').value, logo: $('fc-logo'), qrcode });
+}
+function openPayCard() {
+  $('pc-name').value = store('firc.cardname.' + wallet.address) || '';
+  if (isIOS() && standalone()) $('pc-hint').textContent = 'Print 10 cards opens your iPhone’s share menu with a PDF. Tap Print there, or Save to Files. Then cut along the dashed lines.';
+  drawPayCard();
+  $('ov-paycard').classList.add('on');
+}
+function drawPayCard() {
+  store('firc.cardname.' + wallet.address, $('pc-name').value.trim() || null);
+  $('pc-img').src = payCardCanvas().toDataURL('image/png');
+}
+// The share menu if this device has one (it has Print and Save on iPhone), otherwise a download.
+function giveFile(file) {
+  const download = () => {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = file.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  };
+  if (navigator.canShare && navigator.canShare({ files: [file] })) navigator.share({ files: [file] }).catch((e) => { if (e && e.name !== 'AbortError') download(); });
+  else download();
+}
+function printPayCards() {
+  const c = payCardCanvas();
+  if (isIOS() && standalone()) { // a home-screen app can't print on iPhone, but the share menu can print a PDF
+    const pdf = FierPay.sheetPdf(FierPay.bytesFromDataUrl(c.toDataURL('image/jpeg', 0.92)), FierPay.CARD_W, FierPay.CARD_H);
+    return giveFile(new File([pdf], 'FierCoin-pay-me-cards.pdf', { type: 'application/pdf' }));
+  }
+  $('printSheet').innerHTML = ('<div><img alt="" src="' + c.toDataURL('image/png') + '"></div>').repeat(10);
+  Promise.all([...$('printSheet').querySelectorAll('img')].map((i) => i.decode().catch(() => {}))).then(() => window.print());
+}
+function savePayCard() {
+  giveFile(new File([FierPay.bytesFromDataUrl(payCardCanvas().toDataURL('image/png'))], 'FierCoin-pay-me-card.png', { type: 'image/png' }));
+}
 
 // ---------- send ----------
 function spendable() { return utxos.filter((c) => c.mature); }

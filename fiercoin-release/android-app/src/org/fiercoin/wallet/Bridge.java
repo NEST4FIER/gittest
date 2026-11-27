@@ -143,6 +143,64 @@ Bridge(MainActivity a) {
         a.startActivity(chooser);
     }
 
+    /** Opens Android's print screen for the page. Its print layout shows only the pay-me cards. */
+    @JavascriptInterface
+    public void print(String title) {
+        a.runOnUiThread(new PrintTask(a, title));
+    }
+
+    /**
+     * A PNG from the app's assets as a data: URL. The page needs this to draw the logo on the
+     * pay-me card: a picture loaded from file:// would stop the card from being saved or printed.
+     */
+    @JavascriptInterface
+    public String assetDataUrl(String name) {
+        if (name == null || !name.matches("[A-Za-z0-9._-]+\\.png")) return "";
+        try (InputStream in = a.getAssets().open(name)) {
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+            byte[] buf = new byte[16384];
+            int r;
+            while ((r = in.read(buf)) > 0) out.write(buf, 0, r);
+            return "data:image/png;base64," + android.util.Base64.encodeToString(out.toByteArray(), android.util.Base64.NO_WRAP);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /** Saves a PNG picture (base64) into the phone's Pictures/FierCoin folder. Returns a message for the user. */
+    @JavascriptInterface
+    public String saveImage(String base64, String name) {
+        String file = name == null ? "" : name.replaceAll("[^A-Za-z0-9._-]", "");
+        if (!file.endsWith(".png") || file.length() < 5) file = "fiercoin-pay-me-card.png";
+        byte[] png;
+        try {
+            png = android.util.Base64.decode(base64, android.util.Base64.DEFAULT);
+        } catch (IllegalArgumentException e) {
+            return "Could not save the picture.";
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= 29) {
+                ContentValues v = new ContentValues();
+                v.put(MediaStore.Images.Media.DISPLAY_NAME, file);
+                v.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+                v.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/FierCoin");
+                Uri uri = a.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v);
+                if (uri == null) return "Could not save the picture.";
+                try (OutputStream out = a.getContentResolver().openOutputStream(uri)) {
+                    out.write(png);
+                }
+                return "Saved to your photos, in the FierCoin album.";
+            }
+            File dest = new File(a.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES), file);
+            try (OutputStream out = new java.io.FileOutputStream(dest)) {
+                out.write(png);
+            }
+            return "Saved to " + dest.getAbsolutePath();
+        } catch (Exception e) {
+            return "Could not save the picture: " + e.getMessage();
+        }
+    }
+
     @JavascriptInterface
     public void batterySettings() {
         PowerManager pm = (PowerManager) a.getSystemService(Context.POWER_SERVICE);
