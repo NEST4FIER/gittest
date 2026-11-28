@@ -261,11 +261,14 @@ function dropSnowflake(x, y) {
 document.querySelectorAll(".service-row").forEach((row) => {
   const snowText = row.querySelectorAll("[data-snow]");
   // Screen readers get the plain words, never the snow symbols
+  const group = row.closest(".service-group").querySelector("h3").textContent;
   row.setAttribute(
     "aria-label",
-    [...row.querySelectorAll(".service-name, .service-note, .service-price")]
-      .map((el) => el.textContent.trim())
-      .join(", ") + ". Book this service."
+    `${group}: ` +
+      [...row.querySelectorAll(".service-name, .service-note, .service-price")]
+        .map((el) => el.textContent.trim())
+        .join(", ") +
+      ". Book this service."
   );
   let lastFlake = 0;
 
