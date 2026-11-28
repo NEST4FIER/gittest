@@ -167,29 +167,19 @@ a { color: var(--blue); }
   overflow: clip visible; /* snowflakes can fall below the list but never cause sideways scrolling */
 }
 .service-group { border-bottom: 1px solid var(--line); }
-/* On computers, the services sit in two columns like a printed menu:
-   Hair, Waxing, Man-Threading and Makeup on the left, Manscaping on the right */
+/* On computers, the services flow through two even columns like a printed menu.
+   A group can continue into the second column, but a single service never splits. */
 @media (min-width: 960px) {
   .service-list {
     max-width: none;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto auto auto 1fr;
-    grid-template-areas:
-      "hair   mans"
-      "wax    mans"
-      "thread mans"
-      "makeup mans"
-      ".      mans";
+    display: block;
+    columns: 2;
     column-gap: 64px;
-    row-gap: 48px;
-    align-items: start;
   }
-  .group-hair { grid-area: hair; }
-  .group-wax { grid-area: wax; }
-  .group-mans { grid-area: mans; }
-  .group-thread { grid-area: thread; }
-  .group-makeup { grid-area: makeup; }
+  .service-group { margin-bottom: 48px; }
+  .service-group:last-of-type { margin-bottom: 0; } /* last-of-type: snowflakes added after it don't count */
+  .service-group h3 { break-after: avoid; }
+  .service-row { break-inside: avoid; }
 }
 .service-group h3 {
   font-family: var(--mono-font);
